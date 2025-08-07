@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Entorno / virtualenv
+.env
+.venv/
+venv/
+
+# Config / claves
+*.env               # tu .env con API keys
+*.env.*
+
+# Docker
+*.log
+*.pid
+# omitimos volúmenes locales
+postgres-data/
+redis-data/
+
+# IDE / OS
+.vscode/
+.DS_Store

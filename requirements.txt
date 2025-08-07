@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pydantic
+SQLAlchemy
+psycopg2-binary
+python-dotenv
+openai
+requests
+celery[redis]
+redis
+alembic
