@@ -1,10 +1,11 @@
-version: "3.9"
 services:
   web:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/code
+    env_file:
+    - .env
     environment:
       - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/planifitai
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -12,9 +13,11 @@ services:
     depends_on:
       - db
       - redis
+    ports:
+      - "8000:8000"
   worker:
     build: .
-    command: celery -A app.core.celery_utils.create_celery worker --loglevel=info
+    command: celery -A app.core.celery_utils.celery_app worker --loglevel=info
     volumes:
       - .:/code
     environment:

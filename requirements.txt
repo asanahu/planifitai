@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
-pydantic
+pydantic>=2.11
+pydantic-settings>=2.1
 SQLAlchemy
 psycopg2-binary
 python-dotenv
@@ -9,3 +10,6 @@ requests
 celery[redis]
 redis
 alembic
+passlib[bcrypt]
+python-jose[cryptography]
+email-validator
