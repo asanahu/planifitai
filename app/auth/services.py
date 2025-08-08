@@ -16,6 +16,9 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return pwd_ctx.verify(password, hashed)
 
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    return db.query(User).filter(User.email == email).first()
+
 def create_user(db: Session, email: str, password: str) -> User:
     user = User(email=email, hashed_password=hash_password(password))
     db.add(user)
@@ -29,7 +32,10 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         return None
     return user
 
-def create_access_token(subject: str, expires_minutes: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
-    to_encode = {"sub": subject, "exp": expire}
+def create_access_token(data: dict, expires_minutes: int | None = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
