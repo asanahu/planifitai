@@ -10,8 +10,9 @@ requests
 celery[redis]
 redis
 alembic
-passlib[bcrypt]==1.7.4
-bcrypt==3.2.2
+passlib[bcrypt]
+bcrypt==3.2.0
 python-jose[cryptography]
 python-multipart
 email-validator
+pytest

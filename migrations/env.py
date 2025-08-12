@@ -2,22 +2,20 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# 👇 Usa la config de tu app (URL de la BD y Base real)
 from app.core.config import settings
 from app.core.database import Base
 
-# 👇 Importa los modelos para que queden registrados en Base.metadata
-from app.auth import models as auth_models  # noqa: F401
+# IMPORTS para registrar modelos en el MetaData:
+from app.auth import models as auth_models          # noqa: F401
+from app.user_profile import models as profile_models  # noqa: F401
 
 config = context.config
-
-# Inyecta la DATABASE_URL de settings (evita depender de alembic.ini)
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadata real de tu app
+# Usa la URL real de settings
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
@@ -27,8 +25,6 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,
-        compare_server_default=True,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -40,12 +36,7 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-            compare_server_default=True,
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
 
