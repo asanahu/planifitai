@@ -175,3 +175,57 @@ def test_unauthorized_access(test_client: TestClient):
     response = test_client.get("/api/v1/routines/")
     assert response.status_code == 401
 
+
+def test_complete_exercise_records_progress(test_client: TestClient, auth_headers: dict):
+    routine_data = {
+        "name": "Routine Prog",
+        "active_days": {"mon": True},
+        "days": [
+            {
+                "weekday": 0,
+                "exercises": [
+                    {"exercise_name": "Jump", "sets": 1, "reps": 1}
+                ],
+            }
+        ],
+    }
+    r_resp = test_client.post("/api/v1/routines/", json=routine_data, headers=auth_headers)
+    routine = r_resp.json()
+    day_id = routine["days"][0]["id"]
+    ex_id = routine["days"][0]["exercises"][0]["id"]
+    payload = {"timestamp": "2024-01-01T00:00:00Z", "duration_seconds": 120}
+    resp = test_client.post(
+        f"/api/v1/routines/{routine['id']}/days/{day_id}/exercises/{ex_id}/complete",
+        json=payload,
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    prog = test_client.get("/api/v1/progress?metric=workout", headers=auth_headers)
+    assert prog.status_code == 200
+    assert len(prog.json()) == 1
+
+
+def test_schedule_notifications_task_invoked(test_client: TestClient, auth_headers: dict, monkeypatch):
+    routine_data = {"name": "Routine Notif", "active_days": {"mon": True}}
+    r_resp = test_client.post("/api/v1/routines/", json=routine_data, headers=auth_headers)
+    routine_id = r_resp.json()["id"]
+
+    called = {}
+
+    def fake_delay(user_id, routine_id_arg, active_days, hour):
+        called["user_id"] = user_id
+        called["routine_id"] = routine_id_arg
+        called["active_days"] = active_days
+        called["hour"] = hour
+
+    monkeypatch.setattr("app.notifications.tasks.schedule_routine.delay", fake_delay)
+    resp = test_client.post(
+        f"/api/v1/routines/{routine_id}/schedule-notifications",
+        json={"hour": 9},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert called["routine_id"] == routine_id
+    assert called["active_days"]["mon"]
+    assert called["hour"] == 9
+

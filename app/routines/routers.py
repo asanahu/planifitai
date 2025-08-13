@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from . import services, schemas
+from app.progress import schemas as progress_schemas
 from app.core.database import get_db
 from app.auth.deps import get_current_user
 from app.auth.models import User
@@ -135,3 +136,29 @@ def delete_routine_exercise(
 ):
     services.delete_routine_exercise(db=db, exercise_id=exercise_id, user=current_user)
     return
+
+
+@router.post("/{routine_id}/schedule-notifications")
+def schedule_notifications(
+    routine_id: int,
+    payload: schemas.ScheduleNotificationsRequest | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    hour = payload.hour if payload else None
+    return services.schedule_routine_notifications(db=db, routine_id=routine_id, user=current_user, hour=hour)
+
+
+@router.post(
+    "/{routine_id}/days/{day_id}/exercises/{exercise_id}/complete",
+    response_model=progress_schemas.ProgressEntryRead,
+)
+def complete_exercise(
+    routine_id: int,
+    day_id: int,
+    exercise_id: int,
+    payload: schemas.CompleteExerciseRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return services.complete_exercise(db=db, exercise_id=exercise_id, user=current_user, payload=payload)

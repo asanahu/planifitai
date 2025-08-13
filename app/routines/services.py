@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from app.auth.models import User
 from fastapi import HTTPException, status
+from app.notifications.tasks import schedule_routine
+from app.progress import models as progress_models
 
 def get_routine(db: Session, routine_id: int, user: User):
     routine = db.query(models.Routine).filter(models.Routine.id == routine_id, models.Routine.deleted_at == None).first()
@@ -61,7 +63,6 @@ def create_routine(db: Session, routine: schemas.RoutineCreate, user: User):
     db.add(db_routine)
     db.commit()
     db.refresh(db_routine)
-
     for day_data in routine.days:
         db_day = models.RoutineDay(
             routine_id=db_routine.id,
@@ -80,7 +81,9 @@ def create_routine(db: Session, routine: schemas.RoutineCreate, user: User):
             db.commit()
             db.refresh(db_exercise)
 
-    db.refresh(db_routine) # Refresh to get all nested relationships
+    db.refresh(db_routine)  # Refresh to get all nested relationships
+    if routine.active_days:
+        schedule_routine.delay(user.id, db_routine.id, routine.active_days, None)
     return db_routine
 
 
@@ -243,3 +246,50 @@ def delete_routine_exercise(db: Session, exercise_id: int, user: User):
     db.delete(db_exercise)
     db.commit()
     return {"detail": "Exercise deleted"}
+
+
+def schedule_routine_notifications(db: Session, routine_id: int, user: User, hour: int | None = None):
+    routine = get_routine(db, routine_id, user)
+    if routine.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    if not routine.active_days:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Routine has no active days")
+    schedule_routine.delay(user.id, routine.id, routine.active_days, hour)
+    return {"detail": "notifications scheduled"}
+
+
+def complete_exercise(db: Session, exercise_id: int, user: User, payload: schemas.CompleteExerciseRequest):
+    db_exercise = (
+        db.query(models.RoutineExercise)
+        .join(models.RoutineDay)
+        .join(models.Routine)
+        .filter(models.RoutineExercise.id == exercise_id, models.Routine.deleted_at == None)
+        .first()
+    )
+    if not db_exercise:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+    routine = db_exercise.day.routine
+    if routine.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    date_val = payload.timestamp.date()
+    existing = (
+        db.query(progress_models.ProgressEntry)
+        .filter(
+            progress_models.ProgressEntry.user_id == user.id,
+            progress_models.ProgressEntry.date == date_val,
+            progress_models.ProgressEntry.metric == progress_models.MetricEnum.workout,
+        )
+        .first()
+    )
+    if existing:
+        return existing
+    entry = progress_models.ProgressEntry(
+        user_id=user.id,
+        date=date_val,
+        metric=progress_models.MetricEnum.workout,
+        value=payload.duration_seconds or 1,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry

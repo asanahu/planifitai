@@ -8,6 +8,7 @@ class MetricEnum(str, enum.Enum):
     steps = "steps"
     rhr = "rhr"
     bodyfat = "bodyfat"
+    workout = "workout"
 
 
 class ProgressEntry(Base):
