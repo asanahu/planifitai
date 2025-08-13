@@ -9,6 +9,11 @@ class MetricEnum(str, enum.Enum):
     rhr = "rhr"
     bodyfat = "bodyfat"
     workout = "workout"
+    calories_intake = "calories_intake"
+    protein_g = "protein_g"
+    carbs_g = "carbs_g"
+    fat_g = "fat_g"
+    water_ml = "water_ml"
 
 
 class ProgressEntry(Base):
