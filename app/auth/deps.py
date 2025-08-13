@@ -19,8 +19,15 @@ def get_current_user(token: str = Depends(oauth2_scheme),
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         sub = payload.get("sub")
+        token_type = payload.get("token_type")
         if sub is None:
             raise cred_exc
+        if token_type != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type for this operation",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     except JWTError:
         raise cred_exc
     user = db.get(User, int(sub))

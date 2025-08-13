@@ -54,7 +54,7 @@ PlanifitAI uses Alembic for database migrations. To apply migrations:
 Tests are written using Pytest and can be run inside the `web` container:
 
 ```bash
-docker-compose exec web pytest
+docker-compose exec web pytest -q
 ```
 
 ## API Documentation
@@ -74,8 +74,8 @@ You can check the health of the API at:
 
 1.  **Register:** Send a POST request to `/api/v1/auth/register` with `email` and `password`.
 2.  **Login:** Send a POST request to `/api/v1/auth/login` with `username` (email) and `password` (form data). This will return an `access_token` and a `refresh_token`.
-3.  **Access Protected Endpoints:** Use the `access_token` in the `Authorization` header as a Bearer token.
-4.  **Refresh Token:** If your `access_token` expires, send a POST request to `/api/v1/auth/refresh` with your `refresh_token` in the request body to get a new `access_token` and `refresh_token`.
+3.  **Access Protected Endpoints:** Use the `access_token` in the `Authorization` header as a Bearer token. Refresh tokens are rejected on protected routes.
+4.  **Refresh Token:** If your `access_token` expires, send a POST request to `/api/v1/auth/refresh` with your `refresh_token` in the request body to get a new pair of tokens.
 
 ## User Profile Module
 
@@ -83,3 +83,11 @@ You can check the health of the API at:
 *   **Get Profile:** GET `/api/v1/profile/me` (protected) - Retrieves the authenticated user's profile.
 *   **Update Profile:** PATCH `/api/v1/profile` (protected) - Partially updates the authenticated user's profile.
 *   **Delete Profile:** DELETE `/api/v1/profile` (protected) - Deletes the authenticated user's profile.
+
+## Roadmap
+
+Upcoming modules and their tentative scope:
+
+* **Routines**: workout plan templates (name, days, exercises).
+* **Progress**: tracking metrics by date (metric type, value, unit).
+* **Notifications**: scheduled reminders via Celery (message, send_at, user_id).

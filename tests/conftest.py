@@ -1,3 +1,11 @@
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+os.environ.setdefault("SECRET_KEY", "secret")
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -39,3 +47,13 @@ def test_client(db_session):
 
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
+
+
+@pytest.fixture
+def tokens(test_client: TestClient):
+    test_client.post("/api/v1/auth/register", json={"email": "user@example.com", "password": "string"})
+    login_resp = test_client.post(
+        "/api/v1/auth/login",
+        data={"username": "user@example.com", "password": "string"},
+    )
+    return login_resp.json()
