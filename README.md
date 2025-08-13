@@ -112,3 +112,30 @@ Upcoming modules and their tentative scope:
 
 * **Routines**: workout plan templates (name, days, exercises).
 * **Notifications**: scheduled reminders via Celery (message, send_at, user_id).
+## Nutrition Module (MVP)
+
+Tracks daily meals, macronutrients, water intake and targets.
+
+**Endpoints:**
+
+* **Create meal:** `POST /api/v1/nutrition/meal`
+* **Day log:** `GET /api/v1/nutrition?date=YYYY-MM-DD`
+* **Water log:** `POST /api/v1/nutrition/water` and `GET /api/v1/nutrition/water?date=YYYY-MM-DD`
+* **Targets:** `GET /api/v1/nutrition/targets?date=YYYY-MM-DD`, `POST /api/v1/nutrition/targets/custom`, `POST /api/v1/nutrition/targets/auto/recompute`
+* **Summary:** `GET /api/v1/nutrition/summary?start=YYYY-MM-DD&end=YYYY-MM-DD`
+* **Reminders:** `POST /api/v1/nutrition/schedule-reminders`
+* **Post daily summary to progress:** `POST /api/v1/nutrition/post-daily-summary?date=YYYY-MM-DD`
+
+Example create meal:
+
+```json
+{
+  "date": "2025-08-13",
+  "meal_type": "lunch",
+  "name": "Poke de pollo",
+  "items": [
+    {"food_name": "Pechuga de pollo", "serving_qty": 150, "serving_unit": "g", "calories_kcal": 247, "protein_g": 46.5, "carbs_g": 0, "fat_g": 5},
+    {"food_name": "Arroz cocido", "serving_qty": 180, "serving_unit": "g", "calories_kcal": 234, "protein_g": 4.5, "carbs_g": 50.4, "fat_g": 0.6}
+  ]
+}
+```

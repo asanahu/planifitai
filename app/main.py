@@ -8,6 +8,7 @@ from app.user_profile.routers import router as profile_router
 from app.routines.routers import router as routines_router
 from app.progress.routers import router as progress_router
 from app.notifications.routers import router as notifications_router
+from app.nutrition.routers import router as nutrition_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     app.include_router(profile_router, prefix=settings.API_V1_STR)
     app.include_router(routines_router, prefix=settings.API_V1_STR)
     app.include_router(progress_router, prefix=settings.API_V1_STR)
+    app.include_router(nutrition_router, prefix=settings.API_V1_STR)
     app.include_router(notifications_router, prefix=settings.API_V1_STR)
     return app
 
