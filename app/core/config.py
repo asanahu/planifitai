@@ -11,7 +11,16 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
 
     # Opcionales (si los usas después)
+    OPENAI_API_KEY: str | None = None
+    OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
     OPENAI_EMBEDDING_MODEL: str | None = None
+    OPENAI_MAX_TOKENS: int = 1500
+    OPENAI_TEMPERATURE: float = 0.4
+    OPENAI_TIMEOUT_S: int = 30
+    OPENAI_RETRIES: int = 2
+    AI_RESPONSE_JSON_STRICT: bool = True
+    AI_DAILY_BUDGET_CENTS: int = 100
+
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
 
@@ -20,5 +29,6 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore",
     )
+
 
 settings = Settings()

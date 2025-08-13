@@ -21,3 +21,7 @@
     -   Added models, schemas, CRUD, services and Celery tasks for scheduling reminders.
     -   Added API endpoints for managing preferences, scheduling routines/nutrition and listing notifications.
     -   Implemented basic in-app delivery and email stub.
+-   **AI Module:**
+    -   Added optional `/api/v1/ai` endpoints for workout and nutrition plan generation, chat, insights and recommendations.
+    -   Introduced minimal OpenAI provider with budgeting and simulation mode.
+    -   Added embedding utilities and Alembic migration for `content_embeddings`.
