@@ -98,3 +98,7 @@ class CloneFromTemplateRequest(BaseModel):
 class CompleteExerciseRequest(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     duration_seconds: Optional[int] = None
+
+
+class ScheduleNotificationsRequest(BaseModel):
+    hour: Optional[int] = None
