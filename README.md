@@ -157,3 +157,17 @@ Example scheduling a routine:
 ```json
 { "routine_id": 123, "active_days": {"mon": true}, "hour_local": "07:30" }
 ```
+
+## IA
+
+The project includes an optional AI module available under `/api/v1/ai`.
+Main endpoints:
+
+* `POST /ai/generate/workout-plan`
+* `POST /ai/generate/nutrition-plan`
+* `POST /ai/chat`
+* `POST /ai/insights`
+* `POST /ai/recommend`
+
+All endpoints require authentication and accept `?simulate=true` for
+deterministic responses without contacting external services.
