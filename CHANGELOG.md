@@ -17,3 +17,7 @@
     -   Added models, schemas, CRUD services and API endpoints for meals, water logs and nutrition targets.
     -   Added automatic calculation of daily macro targets based on user profile.
     -   Added integration with notifications and progress modules.
+-   **Notifications Module:**
+    -   Added models, schemas, CRUD, services and Celery tasks for scheduling reminders.
+    -   Added API endpoints for managing preferences, scheduling routines/nutrition and listing notifications.
+    -   Implemented basic in-app delivery and email stub.

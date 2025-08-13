@@ -9,6 +9,7 @@ from app.core.database import Base
 from app.auth import models as auth_models          # noqa: F401
 from app.user_profile import models as profile_models  # noqa: F401
 from app.progress import models as progress_models  # noqa: F401
+from app.notifications import models as notifications_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
