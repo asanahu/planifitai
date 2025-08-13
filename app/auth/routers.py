@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -5,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.auth import schemas, services, models
 from app.auth.deps import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,9 +23,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = services.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
-    
+
     access_token = services.create_access_token({"sub": str(user.id)})
     refresh_token = services.create_refresh_token({"sub": str(user.id)})
+
+    logger.info("User %s logged in", user.id)
     
     return {
         "access_token": access_token,
@@ -40,9 +45,11 @@ def refresh_token(refresh_token: str = Body(..., embed=True), db: Session = Depe
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
-        
+
     access_token = services.create_access_token({"sub": str(user.id)})
     new_refresh_token = services.create_refresh_token({"sub": str(user.id)})
+
+    logger.info("User %s refreshed token", user.id)
     
     return {
         "access_token": access_token,
