@@ -139,3 +139,21 @@ Example create meal:
   ]
 }
 ```
+
+## Notifications Module (MVP)
+
+Stores user notification preferences and schedules reminders using Celery.
+
+**Endpoints:**
+
+* `GET /api/v1/notifications/preferences` – get preferences.
+* `PUT /api/v1/notifications/preferences` – update timezone, channels and quiet hours.
+* `POST /api/v1/notifications/schedule/routines` – schedule workout reminders.
+* `POST /api/v1/notifications/schedule/nutrition` – schedule meal and water reminders.
+* `GET /api/v1/notifications` – list in-app notifications.
+
+Example scheduling a routine:
+
+```json
+{ "routine_id": 123, "active_days": {"mon": true}, "hour_local": "07:30" }
+```
