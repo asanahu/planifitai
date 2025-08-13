@@ -84,10 +84,31 @@ You can check the health of the API at:
 *   **Update Profile:** PATCH `/api/v1/profile` (protected) - Partially updates the authenticated user's profile.
 *   **Delete Profile:** DELETE `/api/v1/profile` (protected) - Deletes the authenticated user's profile.
 
+## Progress Module (MVP)
+
+Tracks user metrics such as weight, steps, resting heart rate (rhr), and body fat.
+
+**Data Model:** `progress_entries` with `id`, `user_id`, `date`, `metric`, `value`, `unit`, `notes` and a unique constraint on (`user_id`, `date`, `metric`).
+
+**Endpoints:** (all protected with an access token)
+
+* **Create:** `POST /api/v1/progress` – accepts a single entry or `{"items": [...]}` for bulk.
+* **List:** `GET /api/v1/progress` – optional `metric`, `start`, `end` filters.
+* **Summary:** `GET /api/v1/progress/summary` – requires `metric`, supports `window` (7|30|90) or `start`/`end`.
+* **Delete:** `DELETE /api/v1/progress/{entry_id}` – removes an entry.
+
+**Example cURL:**
+
+```bash
+# Login first and set ACCESS token
+curl -X POST http://localhost:8000/api/v1/progress \
+  -H "Authorization: Bearer $ACCESS" -H "Content-Type: application/json" \
+  -d '{"date":"2025-08-13","metric":"weight","value":82.4,"unit":"kg"}'
+```
+
 ## Roadmap
 
 Upcoming modules and their tentative scope:
 
 * **Routines**: workout plan templates (name, days, exercises).
-* **Progress**: tracking metrics by date (metric type, value, unit).
 * **Notifications**: scheduled reminders via Celery (message, send_at, user_id).
