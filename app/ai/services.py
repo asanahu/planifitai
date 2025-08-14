@@ -6,7 +6,7 @@ from typing import List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth.models import User
+from app.auth.deps import UserContext
 
 from .provider import OpenAIProvider
 from . import schemas
@@ -21,7 +21,9 @@ _provider = OpenAIProvider()
 # ---------------------------------------------------------------------------
 
 
-def generate_workout_plan(user: User, req: schemas.WorkoutPlanRequest, *, simulate: bool = False) -> schemas.WorkoutPlan:
+def generate_workout_plan(
+    user: UserContext, req: schemas.WorkoutPlanRequest, *, simulate: bool = False
+) -> schemas.WorkoutPlan:
     """Return a very small deterministic workout plan."""
     # We simply ensure the provider budget accounting is hit.
     _provider.chat(user.id, [], simulate=simulate)
@@ -43,7 +45,9 @@ def generate_workout_plan(user: User, req: schemas.WorkoutPlanRequest, *, simula
     return plan
 
 
-def generate_nutrition_plan(user: User, req: schemas.NutritionPlanRequest, *, simulate: bool = False) -> schemas.NutritionPlan:
+def generate_nutrition_plan(
+    user: UserContext, req: schemas.NutritionPlanRequest, *, simulate: bool = False
+) -> schemas.NutritionPlan:
     _provider.chat(user.id, [], simulate=simulate)
 
     item = schemas.MealItem(
@@ -69,12 +73,12 @@ def generate_nutrition_plan(user: User, req: schemas.NutritionPlanRequest, *, si
 # Chat & insights
 # ---------------------------------------------------------------------------
 
-def chat(user: User, req: schemas.ChatRequest) -> schemas.ChatResponse:
+def chat(user: UserContext, req: schemas.ChatRequest) -> schemas.ChatResponse:
     resp = _provider.chat(user.id, [m.model_dump() for m in req.messages], simulate=req.simulate or False)
     return schemas.ChatResponse(reply=resp["reply"], actions=[])
 
 
-def insights(user: User, req: schemas.InsightsRequest) -> schemas.InsightsResponse:
+def insights(user: UserContext, req: schemas.InsightsRequest) -> schemas.InsightsResponse:
     # We simulate some trivial analysis
     _provider.chat(user.id, [], simulate=True)
     trends = {
@@ -89,7 +93,7 @@ def insights(user: User, req: schemas.InsightsRequest) -> schemas.InsightsRespon
 # Recommendations
 # ---------------------------------------------------------------------------
 
-def recommend(user: User, req: schemas.RecommendRequest, db: Session) -> schemas.RecommendResponse:
+def recommend(user: UserContext, req: schemas.RecommendRequest, db: Session) -> schemas.RecommendResponse:
     base = db.query(emb.ContentEmbedding).filter_by(namespace=req.namespace, ref_id=req.ref_id).first()
     if not base:
         raise HTTPException(status_code=404, detail="reference embedding not found")

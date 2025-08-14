@@ -1,11 +1,11 @@
 from datetime import date
 from typing import Dict
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.auth.deps import get_current_user
-from app.auth.models import User
+from app.auth.deps import UserContext, get_current_user
 from app.user_profile.models import UserProfile
 from app.dependencies import get_owned_meal
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 def create_meal(
     payload: schemas.MealCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     if payload.date > date.today():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Future date not allowed")
@@ -30,7 +30,7 @@ def create_meal(
 def get_day(
     date: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     day_log = services.get_day_log(db, current_user.id, date)
     return day_log
@@ -81,7 +81,7 @@ def delete_item(item_id: int, meal: models.NutritionMeal = Depends(get_owned_mea
 def create_water_log(
     payload: schemas.WaterLogCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     log = crud.create_water_log(db, current_user.id, payload)
     return schemas.WaterLogRead.model_validate(log)
@@ -91,7 +91,7 @@ def create_water_log(
 def get_water_logs(
     date: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     logs = crud.list_water_logs(db, current_user.id, date)
     total = sum(l.volume_ml for l in logs)
@@ -102,7 +102,7 @@ def get_water_logs(
 def get_targets(
     date: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     target = services.get_or_create_target(db, current_user.id, date)
     return schemas.TargetsRead.model_validate(target)
@@ -112,7 +112,7 @@ def get_targets(
 def set_custom_targets(
     payload: schemas.TargetsSetCustom,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     data = payload.model_dump(exclude={"date"})
     target = crud.upsert_target(db, current_user.id, payload.date, data, models.TargetSource.custom)
@@ -123,7 +123,7 @@ def set_custom_targets(
 def recompute_targets(
     date: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     profile = db.query(UserProfile).filter_by(user_id=current_user.id).first()
     if not profile:
@@ -138,7 +138,7 @@ def summary(
     start: date,
     end: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.get_summary(db, current_user.id, start, end)
 
@@ -147,7 +147,7 @@ def summary(
 def schedule_reminders(
     times: Dict | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.schedule_reminders(db, current_user.id, times or {})
 
@@ -156,6 +156,6 @@ def schedule_reminders(
 def post_daily_summary(
     date: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.post_daily_summary(db, current_user.id, date)
