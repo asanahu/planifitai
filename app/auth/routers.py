@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.auth import schemas, services, models
-from app.auth.deps import get_current_user
+from app.auth.deps import UserContext, get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -58,5 +58,11 @@ def refresh_token(refresh_token: str = Body(..., embed=True), db: Session = Depe
     }
 
 @router.get("/me", response_model=schemas.UserRead)
-def me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+def me(
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    user = db.get(models.User, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

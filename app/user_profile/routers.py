@@ -3,8 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.auth.deps import get_current_user
-from app.auth.models import User
+from app.auth.deps import UserContext, get_current_user
 from app.user_profile import services, schemas
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 @router.get("/", response_model=list[schemas.UserProfileRead])
 def list_profiles(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.list_my_profiles(db, current_user)
 
@@ -24,7 +23,7 @@ def list_profiles(
 def get_profile(
     profile_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     obj = services.get_profile(db, profile_id, current_user)
     if not obj:
@@ -36,7 +35,7 @@ def get_profile(
 def create_profile(
     payload: schemas.UserProfileCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     profile = services.create_profile(db, payload, current_user)
     logger.info("Profile created for user %s", current_user.id)
@@ -48,7 +47,7 @@ def update_profile(
     profile_id: int,
     payload: schemas.UserProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     profile = services.update_profile(db, profile_id, payload, current_user)
     if not profile:
@@ -61,7 +60,7 @@ def update_profile(
 def delete_profile(
     profile_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     ok = services.delete_profile(db, profile_id, current_user)
     if not ok:

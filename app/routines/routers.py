@@ -5,8 +5,7 @@ from typing import List
 from . import services, schemas, models
 from app.progress import schemas as progress_schemas
 from app.core.database import get_db
-from app.auth.deps import get_current_user
-from app.auth.models import User
+from app.auth.deps import UserContext, get_current_user
 from app.dependencies import get_owned_routine
 
 router = APIRouter(prefix="/routines", tags=["routines"])
@@ -15,7 +14,7 @@ router = APIRouter(prefix="/routines", tags=["routines"])
 def create_routine(
     routine: schemas.RoutineCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.create_routine(db=db, routine=routine, user=current_user)
 
@@ -25,7 +24,7 @@ def read_routines(
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.get_routines_by_user(db=db, user_id=current_user.id, skip=skip, limit=limit)
 
@@ -47,15 +46,20 @@ def update_routine(
     routine_update: schemas.RoutineUpdate,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.update_routine(
-        db=db, routine_id=routine.id, routine_update=routine_update, user=routine.owner
+        db=db, routine_id=routine.id, routine_update=routine_update, user=current_user
     )
 
 
 @router.delete("/{routine_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_routine(routine: models.Routine = Depends(get_owned_routine), db: Session = Depends(get_db)):
-    services.delete_routine(db=db, routine_id=routine.id, user=routine.owner)
+def delete_routine(
+    routine: models.Routine = Depends(get_owned_routine),
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    services.delete_routine(db=db, routine_id=routine.id, user=current_user)
     return
 
 
@@ -63,7 +67,7 @@ def delete_routine(routine: models.Routine = Depends(get_owned_routine), db: Ses
 def clone_template(
     clone_request: schemas.CloneFromTemplateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.clone_template(
         db=db, template_id=clone_request.template_id, user=current_user
@@ -71,8 +75,13 @@ def clone_template(
 
 
 @router.post("/{routine_id}/days", response_model=schemas.RoutineDayRead)
-def create_routine_day(day: schemas.RoutineDayCreate, routine: models.Routine = Depends(get_owned_routine), db: Session = Depends(get_db)):
-    return services.add_day_to_routine(db=db, routine_id=routine.id, day=day, user=routine.owner)
+def create_routine_day(
+    day: schemas.RoutineDayCreate,
+    routine: models.Routine = Depends(get_owned_routine),
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    return services.add_day_to_routine(db=db, routine_id=routine.id, day=day, user=current_user)
 
 
 @router.put("/{routine_id}/days/{day_id}", response_model=schemas.RoutineDayRead)
@@ -81,13 +90,21 @@ def update_routine_day(
     day_update: schemas.RoutineDayUpdate,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
-    return services.update_routine_day(db=db, day_id=day_id, day_update=day_update, user=routine.owner)
+    return services.update_routine_day(
+        db=db, day_id=day_id, day_update=day_update, user=current_user
+    )
 
 
 @router.delete("/{routine_id}/days/{day_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_routine_day(day_id: int, routine: models.Routine = Depends(get_owned_routine), db: Session = Depends(get_db)):
-    services.delete_routine_day(db=db, day_id=day_id, user=routine.owner)
+def delete_routine_day(
+    day_id: int,
+    routine: models.Routine = Depends(get_owned_routine),
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    services.delete_routine_day(db=db, day_id=day_id, user=current_user)
     return
 
 
@@ -97,8 +114,11 @@ def create_routine_exercise(
     exercise: schemas.RoutineExerciseCreate,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
-    return services.add_exercise_to_day(db=db, day_id=day_id, exercise=exercise, user=routine.owner)
+    return services.add_exercise_to_day(
+        db=db, day_id=day_id, exercise=exercise, user=current_user
+    )
 
 
 @router.put("/{routine_id}/days/{day_id}/exercises/{exercise_id}", response_model=schemas.RoutineExerciseRead)
@@ -107,9 +127,10 @@ def update_routine_exercise(
     exercise_update: schemas.RoutineExerciseUpdate,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
     return services.update_routine_exercise(
-        db=db, exercise_id=exercise_id, exercise_update=exercise_update, user=routine.owner
+        db=db, exercise_id=exercise_id, exercise_update=exercise_update, user=current_user
     )
 
 
@@ -118,8 +139,9 @@ def delete_routine_exercise(
     exercise_id: int,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
-    services.delete_routine_exercise(db=db, exercise_id=exercise_id, user=routine.owner)
+    services.delete_routine_exercise(db=db, exercise_id=exercise_id, user=current_user)
     return
 
 
@@ -128,9 +150,12 @@ def schedule_notifications(
     payload: schemas.ScheduleNotificationsRequest | None = None,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
     hour = payload.hour if payload else None
-    return services.schedule_routine_notifications(db=db, routine_id=routine.id, user=routine.owner, hour=hour)
+    return services.schedule_routine_notifications(
+        db=db, routine_id=routine.id, user=current_user, hour=hour
+    )
 
 
 @router.post(
@@ -142,5 +167,8 @@ def complete_exercise(
     payload: schemas.CompleteExerciseRequest,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
 ):
-    return services.complete_exercise(db=db, exercise_id=exercise_id, user=routine.owner, payload=payload)
+    return services.complete_exercise(
+        db=db, exercise_id=exercise_id, user=current_user, payload=payload
+    )

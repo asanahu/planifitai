@@ -4,14 +4,14 @@ from fastapi import HTTPException, status
 
 from app.user_profile.models import UserProfile
 from app.user_profile.schemas import UserProfileCreate, UserProfileUpdate
-from app.auth.models import User
+from app.auth.deps import UserContext
 
 
 def get_profile_by_user_id(db: Session, user_id: int) -> UserProfile | None:
     return db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
 
 
-def get_profile(db: Session, profile_id: int, current_user: User) -> UserProfile | None:
+def get_profile(db: Session, profile_id: int, current_user: UserContext) -> UserProfile | None:
     return (
         db.query(UserProfile)
         .filter(UserProfile.id == profile_id, UserProfile.user_id == current_user.id)
@@ -19,11 +19,11 @@ def get_profile(db: Session, profile_id: int, current_user: User) -> UserProfile
     )
 
 
-def list_my_profiles(db: Session, current_user: User) -> list[UserProfile]:
+def list_my_profiles(db: Session, current_user: UserContext) -> list[UserProfile]:
     return db.query(UserProfile).filter(UserProfile.user_id == current_user.id).all()
 
 
-def create_profile(db: Session, data: UserProfileCreate, current_user: User) -> UserProfile:
+def create_profile(db: Session, data: UserProfileCreate, current_user: UserContext) -> UserProfile:
     obj = UserProfile(**data.model_dump())
     obj.user_id = current_user.id
     db.add(obj)
@@ -40,7 +40,7 @@ def create_profile(db: Session, data: UserProfileCreate, current_user: User) -> 
 
 
 def update_profile(
-    db: Session, profile_id: int, data: UserProfileUpdate, current_user: User
+    db: Session, profile_id: int, data: UserProfileUpdate, current_user: UserContext
 ) -> UserProfile | None:
     obj = get_profile(db, profile_id, current_user)
     if not obj:
@@ -54,7 +54,7 @@ def update_profile(
     return obj
 
 
-def delete_profile(db: Session, profile_id: int, current_user: User) -> bool:
+def delete_profile(db: Session, profile_id: int, current_user: UserContext) -> bool:
     obj = get_profile(db, profile_id, current_user)
     if not obj:
         return False

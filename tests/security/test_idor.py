@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from app.main import app
-from app.auth.deps import get_current_user
+from app.auth.deps import get_current_user, UserContext
 from app.auth.models import User
 from app.nutrition.models import NutritionMeal
 from app.progress.models import ProgressEntry
@@ -20,9 +20,9 @@ def test_user_cannot_access_other_user_meal(db_session: Session):
 
     client = TestClient(app)
 
-    app.dependency_overrides[get_current_user] = lambda: user_a
+    app.dependency_overrides[get_current_user] = lambda: UserContext(id=user_a.id, email=user_a.email, is_active=True)
 
-    response = client.patch(f"/nutrition/meal/{meal_of_b.id}", json={})
+    response = client.patch(f"/api/v1/nutrition/meal/{meal_of_b.id}", json={})
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Meal not found"}
@@ -40,9 +40,9 @@ def test_user_cannot_access_other_user_progress_entry(db_session: Session):
 
     client = TestClient(app)
 
-    app.dependency_overrides[get_current_user] = lambda: user_a
+    app.dependency_overrides[get_current_user] = lambda: UserContext(id=user_a.id, email=user_a.email, is_active=True)
 
-    response = client.delete(f"/progress/{progress_entry_of_b.id}")
+    response = client.delete(f"/api/v1/progress/{progress_entry_of_b.id}")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Progress entry not found"}
@@ -54,7 +54,7 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from app.main import app
-from app.auth.deps import get_current_user
+from app.auth.deps import get_current_user, UserContext
 from app.auth.models import User
 from app.nutrition.models import NutritionMeal
 from app.progress.models import ProgressEntry
@@ -69,9 +69,9 @@ def test_user_cannot_access_other_user_meal(db_session: Session, test_client: Te
     db_session.add_all([user_a, user_b, meal_of_b])
     db_session.commit()
 
-    app.dependency_overrides[get_current_user] = lambda: user_a
+    app.dependency_overrides[get_current_user] = lambda: UserContext(id=user_a.id, email=user_a.email, is_active=True)
 
-    response = test_client.patch(f"/nutrition/meal/{meal_of_b.id}", json={})
+    response = test_client.patch(f"/api/v1/nutrition/meal/{meal_of_b.id}", json={})
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Meal not found"}
@@ -87,9 +87,9 @@ def test_user_cannot_access_other_user_progress_entry(db_session: Session, test_
     db_session.add_all([user_a, user_b, progress_entry_of_b])
     db_session.commit()
 
-    app.dependency_overrides[get_current_user] = lambda: user_a
+    app.dependency_overrides[get_current_user] = lambda: UserContext(id=user_a.id, email=user_a.email, is_active=True)
 
-    response = test_client.delete(f"/progress/{progress_entry_of_b.id}")
+    response = test_client.delete(f"/api/v1/progress/{progress_entry_of_b.id}")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Progress entry not found"}
@@ -105,9 +105,9 @@ def test_user_cannot_access_other_user_routine(db_session: Session, test_client:
     db_session.add_all([user_a, user_b, routine_of_b])
     db_session.commit()
 
-    app.dependency_overrides[get_current_user] = lambda: user_a
+    app.dependency_overrides[get_current_user] = lambda: UserContext(id=user_a.id, email=user_a.email, is_active=True)
 
-    response = test_client.get(f"/routines/{routine_of_b.id}")
+    response = test_client.get(f"/api/v1/routines/{routine_of_b.id}")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Routine not found"}
