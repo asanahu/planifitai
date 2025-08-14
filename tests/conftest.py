@@ -5,6 +5,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "secret")
+from cryptography.fernet import Fernet
+os.environ.setdefault("PHI_ENCRYPTION_KEY", Fernet.generate_key().decode())
+os.environ.setdefault("PHI_PROVIDER", "app")
 
 import pytest
 from sqlalchemy import create_engine
