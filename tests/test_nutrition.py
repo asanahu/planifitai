@@ -18,7 +18,7 @@ def create_profile(client: TestClient, tokens):
         "activity_level": ActivityLevel.SEDENTARY.value,
         "goal": Goal.MAINTAIN_WEIGHT.value,
     }
-    client.post("/api/v1/profile", json=payload, headers=auth_headers(tokens))
+    client.post("/api/v1/profiles/", json=payload, headers=auth_headers(tokens))
 
 
 def test_create_meal_and_day_log(test_client: TestClient, tokens):
@@ -220,7 +220,7 @@ def test_auth_and_forbidden(test_client: TestClient, tokens):
         json={"name": "other"},
         headers=other_headers,
     )
-    assert res.status_code == 403
+    assert res.status_code == 404
 
 def test_schedule_reminders(test_client: TestClient, tokens):
     create_profile(test_client, tokens)

@@ -33,4 +33,6 @@ def get_current_user(token: str = Depends(oauth2_scheme),
     user = db.get(User, int(sub))
     if not user:
         raise cred_exc
+    db.expunge(user)
     return user
+

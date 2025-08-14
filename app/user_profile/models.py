@@ -28,3 +28,4 @@ class UserProfile(Base):
     goal = Column(Enum(Goal))
 
     user = relationship("User", back_populates="profile")
+
