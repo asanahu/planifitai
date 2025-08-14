@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.auth.deps import get_current_user
 from app.auth.models import User
 from app.user_profile.models import UserProfile
+from app.dependencies import get_owned_meal
 
 from . import schemas, services, crud, models
 
@@ -37,56 +38,42 @@ def get_day(
 
 @router.patch("/meal/{meal_id}", response_model=schemas.MealRead)
 def update_meal(
-    meal_id: int,
     payload: schemas.MealUpdate,
+    meal: models.NutritionMeal = Depends(get_owned_meal),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    meal = crud.update_meal(db, current_user.id, meal_id, payload)
+    meal = crud.update_meal(db, meal.user_id, meal.id, payload)
     return schemas.MealRead.model_validate(meal)
 
 
 @router.delete("/meal/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_meal(
-    meal_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    crud.delete_meal(db, current_user.id, meal_id)
+def delete_meal(meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)):
+    crud.delete_meal(db, meal.user_id, meal.id)
     return
 
 
 @router.post("/meal/{meal_id}/items", response_model=schemas.MealItemRead, status_code=status.HTTP_201_CREATED)
 def add_item(
-    meal_id: int,
-    payload: schemas.MealItemCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    payload: schemas.MealItemCreate, meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)
 ):
-    item = crud.add_meal_item(db, current_user.id, meal_id, payload)
+    item = crud.add_meal_item(db, meal.user_id, meal.id, payload)
     return schemas.MealItemRead.model_validate(item)
 
 
 @router.patch("/meal/{meal_id}/items/{item_id}", response_model=schemas.MealItemRead)
 def update_item(
-    meal_id: int,
     item_id: int,
     payload: schemas.MealItemUpdate,
+    meal: models.NutritionMeal = Depends(get_owned_meal),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    item = crud.update_meal_item(db, current_user.id, meal_id, item_id, payload)
+    item = crud.update_meal_item(db, meal.user_id, meal.id, item_id, payload)
     return schemas.MealItemRead.model_validate(item)
 
 
 @router.delete("/meal/{meal_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_item(
-    meal_id: int,
-    item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    crud.delete_meal_item(db, current_user.id, meal_id, item_id)
+def delete_item(item_id: int, meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)):
+    crud.delete_meal_item(db, meal.user_id, meal.id, item_id)
     return
 
 

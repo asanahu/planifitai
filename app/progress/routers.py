@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.auth.deps import get_current_user
 from app.auth.models import User
+from app.dependencies import get_owned_progress_entry
 
 from . import schemas, services, models
 
@@ -41,8 +42,6 @@ def get_summary(metric: models.MetricEnum,
 
 
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_progress(entry_id: int,
-                    db: Session = Depends(get_db),
-                    current_user: User = Depends(get_current_user)):
-    services.delete_entry(db, current_user.id, entry_id)
+def delete_progress(entry: models.ProgressEntry = Depends(get_owned_progress_entry), db: Session = Depends(get_db)):
+    services.delete_entry(db, entry.user_id, entry.id)
     return
