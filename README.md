@@ -172,3 +172,14 @@ Main endpoints:
 
 All endpoints require authentication and accept `?simulate=true` for
 deterministic responses without contacting external services.
+
+## Git hooks y escaneo de secretos
+
+Usamos `pre-commit` con `detect-secrets`, `gitleaks`, `ruff`, `black` y otros.
+
+**Primer uso**
+```bash
+pip install pre-commit detect-secrets gitleaks
+pre-commit install
+detect-secrets scan > .secrets.baseline
+detect-secrets audit .secrets.baseline

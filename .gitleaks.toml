@@ -1,0 +1,28 @@
+title = "PlanifitAI secret rules"
+
+[[rules]]
+id = "jwt-bearer"
+description = "JWT token"
+regex = '''(?i)\b(eyJ[a-z0-9_\-]+?\.[a-z0-9_\-]+?\.[a-z0-9_\-]+)\b'''
+tags = ["jwt","token","auth"]
+
+[[rules]]
+id = "db-connection-string"
+description = "DB connection string with credentials"
+regex = '''(?i)\b(?:postgres(?:ql)?|mysql|mssql|sqlserver|oracle|redshift|snowflake|clickhouse)(?:\+\w+)?://[^/\s:@]+:[^/\s@]+@[^/\s]+/\S+\b'''
+tags = ["database","credentials","url"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key or token assignment"
+regex = '''(?i)\b(api[_-]?key|token|secret|auth[_-]?token)\b\s*[:=]\s*["']?[a-z0-9_\-]{16,}["']?'''
+tags = ["apikey","token"]
+
+# Minimiza falsos positivos en tests y fixtures
+[allowlist]
+description = "Test/fixtures, baseline and docs"
+regexes = [
+  '''\.secrets\.baseline$''',
+  '''tests?/.*\.(json|txt|yaml|yml|md)$''',
+  '''README\.md$'''
+]

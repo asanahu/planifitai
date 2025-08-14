@@ -5,3 +5,16 @@ repos:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
         exclude: .secrets.baseline
+
+-   repo: https://github.com/zricethezav/gitleaks
+    rev: v8.28.0
+    hooks:
+    -   id: gitleaks
+        args: ["protect", "--staged", "--redact", "--config=.gitleaks.toml", "--no-banner"]
+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+    -   id: detect-private-key
