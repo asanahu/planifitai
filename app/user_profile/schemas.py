@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from app.user_profile.models import ActivityLevel, Goal
 
+
 class UserProfileBase(BaseModel):
     full_name: Optional[str] = Field(None, min_length=2, max_length=50)
     age: Optional[int] = Field(None, gt=0, lt=120)
@@ -9,6 +10,7 @@ class UserProfileBase(BaseModel):
     weight_kg: Optional[float] = Field(None, gt=0, lt=500)
     activity_level: Optional[ActivityLevel] = None
     goal: Optional[Goal] = None
+
 
 class UserProfileCreate(UserProfileBase):
     full_name: str = Field(min_length=2, max_length=50)
@@ -18,8 +20,10 @@ class UserProfileCreate(UserProfileBase):
     activity_level: ActivityLevel
     goal: Goal
 
+
 class UserProfileUpdate(UserProfileBase):
     pass
+
 
 class UserProfileRead(UserProfileBase):
     id: int

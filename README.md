@@ -79,10 +79,11 @@ You can check the health of the API at:
 
 ## User Profile Module
 
-*   **Create Profile:** POST `/api/v1/profile` (protected) - Creates a user profile for the authenticated user.
-*   **Get Profile:** GET `/api/v1/profile/me` (protected) - Retrieves the authenticated user's profile.
-*   **Update Profile:** PATCH `/api/v1/profile` (protected) - Partially updates the authenticated user's profile.
-*   **Delete Profile:** DELETE `/api/v1/profile` (protected) - Deletes the authenticated user's profile.
+*   **List Profiles:** GET `/api/v1/profiles/` (protected) - Lists profiles owned by the authenticated user.
+*   **Create Profile:** POST `/api/v1/profiles/` (protected) - Creates a user profile for the authenticated user.
+*   **Get Profile:** GET `/api/v1/profiles/{profile_id}` (protected) - Retrieves the authenticated user's profile by ID.
+*   **Update Profile:** PUT `/api/v1/profiles/{profile_id}` (protected) - Updates the authenticated user's profile.
+*   **Delete Profile:** DELETE `/api/v1/profiles/{profile_id}` (protected) - Deletes the authenticated user's profile.
 
 ## Progress Module (MVP)
 

@@ -21,6 +21,6 @@ def test_refresh_rejects_access_token(test_client: TestClient, tokens):
 def test_protected_rejects_refresh_token(test_client: TestClient, tokens):
     refresh_token = tokens["refresh_token"]
     headers = {"Authorization": f"Bearer {refresh_token}"}
-    response = test_client.get("/api/v1/profile/me", headers=headers)
+    response = test_client.get("/api/v1/profiles/", headers=headers)
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token type for this operation"
