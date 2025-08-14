@@ -8,6 +8,7 @@ class UserProfileBase(BaseModel):
     age: Optional[int] = Field(None, gt=0, lt=120)
     height_cm: Optional[float] = Field(None, gt=0, lt=300)
     weight_kg: Optional[float] = Field(None, gt=0, lt=500)
+    medical_conditions: Optional[str] = None
     activity_level: Optional[ActivityLevel] = None
     goal: Optional[Goal] = None
 

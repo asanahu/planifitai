@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     JWT_ALGORITHM: str = "HS256"
 
+    # PHI encryption
+    PHI_ENCRYPTION_KEY: str
+    PHI_PROVIDER: str = "app"
+
     # Opcionales (si los usas después)
     OPENAI_API_KEY: str | None = None
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
