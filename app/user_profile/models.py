@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
+from app.security.types import EncryptedFloat, EncryptedString
 
 class ActivityLevel(str, enum.Enum):
     SEDENTARY = "sedentary"
@@ -22,8 +23,9 @@ class UserProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True, nullable=False)
     full_name = Column(String, index=True)
     age = Column(Integer)
-    height_cm = Column(Float)
-    weight_kg = Column(Float)
+    height_cm = Column(EncryptedFloat)
+    weight_kg = Column(EncryptedFloat)
+    medical_conditions = Column(EncryptedString, nullable=True)
     activity_level = Column(Enum(ActivityLevel))
     goal = Column(Enum(Goal))
 
