@@ -10,6 +10,7 @@ venv/
 # Config / claves
 *.env               # tu .env con API keys
 *.env.*
+.secrets.baseline
 
 # Docker
 *.log
