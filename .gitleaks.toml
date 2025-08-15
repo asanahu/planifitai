@@ -21,10 +21,11 @@ tags = ["apikey","token"]
 # Minimiza falsos positivos en tests y fixtures
 [allowlist]
 description = "Test fixtures, docs and historical dev credentials"
-paths = [
-  '''tests/test_profile_idor.py$''',
-  '''README\.md$'''
-]
+  paths = [
+    '''tests/test_profile_idor.py$''',
+  '''README\.md$''',
+  '''services/ai/tests/.*'''
+  ]
 commits = [
   "d6e4316d30f94ae190279c169bb4eef73a09ee5d",
   "70866c192663111bfaaa3bb942c40e3487b9a7c9",

@@ -5,16 +5,21 @@ services:
     volumes:
       - .:/code
     env_file:
-    - .env
+      - .env
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - AI_SERVICE_URL=http://ai:8080
+      - AI_INTERNAL_SECRET=${AI_INTERNAL_SECRET}
     depends_on:
       - db
       - redis
+      - ai
     ports:
       - "8000:8000"
+    networks:
+      - internal
   worker:
     build: .
     command: celery -A app.core.celery_utils.celery_app worker --loglevel=info
@@ -24,9 +29,14 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - DATABASE_URL=${DATABASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AI_SERVICE_URL=http://ai:8080
+      - AI_INTERNAL_SECRET=${AI_INTERNAL_SECRET}
     depends_on:
       - db
       - redis
+      - ai
+    networks:
+      - internal
   db:
     image: postgres:15
     restart: always
@@ -40,3 +50,13 @@ services:
     image: redis:7
     ports:
       - "6379:6379"
+  ai:
+    build: ./services/ai
+    environment:
+      - AI_INTERNAL_SECRET=${AI_INTERNAL_SECRET}
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

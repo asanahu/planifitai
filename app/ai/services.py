@@ -8,12 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext
 
-from .provider import OpenAIProvider
 from . import schemas
 from . import embeddings as emb
-
-
-_provider = OpenAIProvider()
+from app.ai_client import get_ai_client
 
 
 # ---------------------------------------------------------------------------
@@ -25,8 +22,8 @@ def generate_workout_plan(
     user: UserContext, req: schemas.WorkoutPlanRequest, *, simulate: bool = False
 ) -> schemas.WorkoutPlan:
     """Return a very small deterministic workout plan."""
-    # We simply ensure the provider budget accounting is hit.
-    _provider.chat(user.id, [], simulate=simulate)
+    client = get_ai_client()
+    client.chat(user.id, [], simulate=simulate)
 
     day = schemas.WorkoutPlanDay(
         weekday="monday",
@@ -48,7 +45,8 @@ def generate_workout_plan(
 def generate_nutrition_plan(
     user: UserContext, req: schemas.NutritionPlanRequest, *, simulate: bool = False
 ) -> schemas.NutritionPlan:
-    _provider.chat(user.id, [], simulate=simulate)
+    client = get_ai_client()
+    client.chat(user.id, [], simulate=simulate)
 
     item = schemas.MealItem(
         name="manzana",
@@ -74,13 +72,14 @@ def generate_nutrition_plan(
 # ---------------------------------------------------------------------------
 
 def chat(user: UserContext, req: schemas.ChatRequest) -> schemas.ChatResponse:
-    resp = _provider.chat(user.id, [m.model_dump() for m in req.messages], simulate=req.simulate or False)
+    client = get_ai_client()
+    resp = client.chat(user.id, [m.model_dump() for m in req.messages], simulate=req.simulate or False)
     return schemas.ChatResponse(reply=resp["reply"], actions=[])
 
 
 def insights(user: UserContext, req: schemas.InsightsRequest) -> schemas.InsightsResponse:
-    # We simulate some trivial analysis
-    _provider.chat(user.id, [], simulate=True)
+    client = get_ai_client()
+    client.chat(user.id, [], simulate=True)
     trends = {
         "weight": {"slope": 0.1, "weekly_change": 0.2, "plateau": False},
         "training_adherence": {"slope": 0.0, "weekly_change": 0.0, "plateau": False},
