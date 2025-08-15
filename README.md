@@ -57,6 +57,18 @@ Tests are written using Pytest and can be run inside the `web` container:
 docker-compose exec web pytest -q
 ```
 
+## Arquitectura IA
+
+El monolito puede delegar las operaciones de IA a un microservicio FastAPI
+ubicado en `services/ai`. Para activarlo expón en el entorno:
+
+```
+AI_SERVICE_URL=http://ai:8080
+AI_INTERNAL_SECRET=<shared-secret>
+```
+
+Si se elimina `AI_SERVICE_URL` el sistema vuelve automáticamente al modo local.
+
 ## API Documentation
 
 The API documentation is available at:

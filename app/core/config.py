@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     OPENAI_RETRIES: int = 2
     AI_RESPONSE_JSON_STRICT: bool = True
     AI_DAILY_BUDGET_CENTS: int = 100
+    AI_SERVICE_URL: str | None = None
+    AI_INTERNAL_SECRET: str | None = None
 
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
