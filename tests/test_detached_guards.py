@@ -37,7 +37,9 @@ def test_profile_create_no_detached(db_session: Session, test_client: TestClient
 def test_get_owned_routine_eager_loaded(db_session: Session):
     user = auth_models.User(id=1, email="r@example.com", hashed_password="pwd")
     routine = routine_models.Routine(id=1, owner_id=user.id, name="R")
-    day = routine_models.RoutineDay(id=1, routine_id=routine.id, weekday=0, order_index=0)
+    day = routine_models.RoutineDay(
+        id=1, routine_id=routine.id, weekday=0, order_index=0
+    )
     exercise = routine_models.RoutineExercise(
         id=1, routine_day_id=day.id, exercise_name="squat", sets=3
     )

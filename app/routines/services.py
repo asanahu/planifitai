@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from sqlalchemy.orm import Session, selectinload
 from . import models, schemas
@@ -7,33 +6,46 @@ from fastapi import HTTPException, status
 from app.notifications.tasks import schedule_routine
 from app.progress import models as progress_models
 
+
 def get_routine(db: Session, routine_id: int, user: UserContext):
     routine = (
         db.query(models.Routine)
-        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .options(
+            selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
+        )
         .filter(models.Routine.id == routine_id, models.Routine.deleted_at == None)
         .first()
     )
     if not routine:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Routine not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Routine not found"
+        )
     if not routine.is_public and routine.owner_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
     return routine
+
 
 def get_routines_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 20):
     return (
         db.query(models.Routine)
-        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .options(
+            selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
+        )
         .filter(models.Routine.owner_id == user_id, models.Routine.deleted_at == None)
         .offset(skip)
         .limit(limit)
         .all()
     )
 
+
 def get_public_templates(db: Session, skip: int = 0, limit: int = 20):
     return (
         db.query(models.Routine)
-        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .options(
+            selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
+        )
         .filter(
             models.Routine.is_template == True,
             models.Routine.is_public == True,
@@ -43,6 +55,7 @@ def get_public_templates(db: Session, skip: int = 0, limit: int = 20):
         .limit(limit)
         .all()
     )
+
 
 def create_routine(db: Session, routine: schemas.RoutineCreate, user: UserContext):
     # Check for unique name for the same user
@@ -98,11 +111,18 @@ def create_routine(db: Session, routine: schemas.RoutineCreate, user: UserContex
     return db_routine
 
 
-def update_routine(db: Session, routine_id: int, routine_update: schemas.RoutineUpdate, user: UserContext):
+def update_routine(
+    db: Session,
+    routine_id: int,
+    routine_update: schemas.RoutineUpdate,
+    user: UserContext,
+):
     db_routine = get_routine(db, routine_id, user)
 
     if db_routine.owner_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
 
     update_data = routine_update.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -118,7 +138,9 @@ def delete_routine(db: Session, routine_id: int, user: UserContext):
     db_routine = get_routine(db, routine_id, user)
 
     if db_routine.owner_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
 
     db_routine.deleted_at = datetime.utcnow()
     db.add(db_routine)
@@ -129,12 +151,16 @@ def delete_routine(db: Session, routine_id: int, user: UserContext):
 def clone_template(db: Session, template_id: int, user: UserContext):
     template = (
         db.query(models.Routine)
-        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .options(
+            selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
+        )
         .filter(models.Routine.id == template_id, models.Routine.is_template == True)
         .first()
     )
     if not template:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+        )
 
     # Create a new routine from the template
     new_routine = models.Routine(
@@ -180,10 +206,14 @@ def clone_template(db: Session, template_id: int, user: UserContext):
     return new_routine
 
 
-def add_day_to_routine(db: Session, routine_id: int, day: schemas.RoutineDayCreate, user: UserContext):
+def add_day_to_routine(
+    db: Session, routine_id: int, day: schemas.RoutineDayCreate, user: UserContext
+):
     db_routine = get_routine(db, routine_id, user)
     if db_routine.owner_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
 
     db_day = models.RoutineDay(routine_id=routine_id, **day.dict())
     db.add(db_day)
@@ -192,12 +222,16 @@ def add_day_to_routine(db: Session, routine_id: int, day: schemas.RoutineDayCrea
     return db_day
 
 
-def update_routine_day(db: Session, day_id: int, day_update: schemas.RoutineDayUpdate, user: UserContext):
+def update_routine_day(
+    db: Session, day_id: int, day_update: schemas.RoutineDayUpdate, user: UserContext
+):
     db_day = db.query(models.RoutineDay).filter(models.RoutineDay.id == day_id).first()
     if not db_day:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Routine day not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Routine day not found"
+        )
 
-    get_routine(db, db_day.routine_id, user) # Check for ownership
+    get_routine(db, db_day.routine_id, user)  # Check for ownership
 
     update_data = day_update.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -212,21 +246,27 @@ def update_routine_day(db: Session, day_id: int, day_update: schemas.RoutineDayU
 def delete_routine_day(db: Session, day_id: int, user: UserContext):
     db_day = db.query(models.RoutineDay).filter(models.RoutineDay.id == day_id).first()
     if not db_day:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Routine day not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Routine day not found"
+        )
 
-    get_routine(db, db_day.routine_id, user) # Check for ownership
+    get_routine(db, db_day.routine_id, user)  # Check for ownership
 
     db.delete(db_day)
     db.commit()
     return {"detail": "Routine day deleted"}
 
 
-def add_exercise_to_day(db: Session, day_id: int, exercise: schemas.RoutineExerciseCreate, user: UserContext):
+def add_exercise_to_day(
+    db: Session, day_id: int, exercise: schemas.RoutineExerciseCreate, user: UserContext
+):
     db_day = db.query(models.RoutineDay).filter(models.RoutineDay.id == day_id).first()
     if not db_day:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Routine day not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Routine day not found"
+        )
 
-    get_routine(db, db_day.routine_id, user) # Check for ownership
+    get_routine(db, db_day.routine_id, user)  # Check for ownership
 
     db_exercise = models.RoutineExercise(routine_day_id=day_id, **exercise.dict())
     db.add(db_exercise)
@@ -236,13 +276,22 @@ def add_exercise_to_day(db: Session, day_id: int, exercise: schemas.RoutineExerc
 
 
 def update_routine_exercise(
-    db: Session, exercise_id: int, exercise_update: schemas.RoutineExerciseUpdate, user: UserContext
+    db: Session,
+    exercise_id: int,
+    exercise_update: schemas.RoutineExerciseUpdate,
+    user: UserContext,
 ):
-    db_exercise = db.query(models.RoutineExercise).filter(models.RoutineExercise.id == exercise_id).first()
+    db_exercise = (
+        db.query(models.RoutineExercise)
+        .filter(models.RoutineExercise.id == exercise_id)
+        .first()
+    )
     if not db_exercise:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found"
+        )
 
-    get_routine(db, db_exercise.day.routine_id, user) # Check for ownership
+    get_routine(db, db_exercise.day.routine_id, user)  # Check for ownership
 
     update_data = exercise_update.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -255,42 +304,63 @@ def update_routine_exercise(
 
 
 def delete_routine_exercise(db: Session, exercise_id: int, user: UserContext):
-    db_exercise = db.query(models.RoutineExercise).filter(models.RoutineExercise.id == exercise_id).first()
+    db_exercise = (
+        db.query(models.RoutineExercise)
+        .filter(models.RoutineExercise.id == exercise_id)
+        .first()
+    )
     if not db_exercise:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found"
+        )
 
-    get_routine(db, db_exercise.day.routine_id, user) # Check for ownership
+    get_routine(db, db_exercise.day.routine_id, user)  # Check for ownership
 
     db.delete(db_exercise)
     db.commit()
     return {"detail": "Exercise deleted"}
 
 
-def schedule_routine_notifications(db: Session, routine_id: int, user: UserContext, hour: int | None = None):
+def schedule_routine_notifications(
+    db: Session, routine_id: int, user: UserContext, hour: int | None = None
+):
     routine = get_routine(db, routine_id, user)
     if routine.owner_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
     if not routine.active_days:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Routine has no active days")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Routine has no active days"
+        )
     schedule_routine.delay(user.id, routine.id, routine.active_days, hour)
     return {"detail": "notifications scheduled"}
 
 
 def complete_exercise(
-    db: Session, exercise_id: int, user: UserContext, payload: schemas.CompleteExerciseRequest
+    db: Session,
+    exercise_id: int,
+    user: UserContext,
+    payload: schemas.CompleteExerciseRequest,
 ):
     db_exercise = (
         db.query(models.RoutineExercise)
         .join(models.RoutineDay)
         .join(models.Routine)
-        .filter(models.RoutineExercise.id == exercise_id, models.Routine.deleted_at == None)
+        .filter(
+            models.RoutineExercise.id == exercise_id, models.Routine.deleted_at == None
+        )
         .first()
     )
     if not db_exercise:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found"
+        )
     routine = db_exercise.day.routine
     if routine.owner_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
     date_val = payload.timestamp.date()
     existing = (
         db.query(progress_models.ProgressEntry)

@@ -21,7 +21,9 @@ def _combine_to_utc(day: date, t: time, tz: str) -> datetime:
     return local.astimezone(ZoneInfo("UTC"))
 
 
-def _respect_quiet_hours(pref: models.NotificationPreference, local_dt: datetime) -> datetime:
+def _respect_quiet_hours(
+    pref: models.NotificationPreference, local_dt: datetime
+) -> datetime:
     if not pref or not pref.quiet_hours_start_local or not pref.quiet_hours_end_local:
         return local_dt
     tz = ZoneInfo(pref.tz or DEFAULT_TZ)

@@ -38,7 +38,11 @@ def get_owned_progress_entry(
     """
     Dependency that gets a progress entry by its ID and verifies it belongs to the current authenticated user.
     """
-    entry = db.query(ProgressEntry).filter(ProgressEntry.id == entry_id, ProgressEntry.user_id == current_user.id).first()
+    entry = (
+        db.query(ProgressEntry)
+        .filter(ProgressEntry.id == entry_id, ProgressEntry.user_id == current_user.id)
+        .first()
+    )
     if not entry:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

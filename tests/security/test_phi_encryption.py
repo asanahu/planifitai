@@ -20,7 +20,9 @@ def test_phi_encryption_roundtrip(test_client, db_session, tokens):
         "activity_level": "sedentary",
         "goal": "maintain_weight",
     }
-    resp = test_client.post("/api/v1/profiles/", json=payload, headers=_auth_header(tokens))
+    resp = test_client.post(
+        "/api/v1/profiles/", json=payload, headers=_auth_header(tokens)
+    )
     assert resp.status_code == 201
     data = resp.json()
     assert data["weight_kg"] == payload["weight_kg"]
@@ -28,7 +30,9 @@ def test_phi_encryption_roundtrip(test_client, db_session, tokens):
     assert data["medical_conditions"] == payload["medical_conditions"]
 
     row = db_session.execute(
-        text("SELECT weight_kg, height_cm, medical_conditions FROM user_profiles WHERE id=:id"),
+        text(
+            "SELECT weight_kg, height_cm, medical_conditions FROM user_profiles WHERE id=:id"
+        ),
         {"id": data["id"]},
     ).first()
     assert b"81.5" not in row[0]
@@ -46,7 +50,9 @@ def test_phi_key_rotation(test_client, db_session, tokens):
         "activity_level": "sedentary",
         "goal": "maintain_weight",
     }
-    resp = test_client.post("/api/v1/profiles/", json=payload, headers=_auth_header(tokens))
+    resp = test_client.post(
+        "/api/v1/profiles/", json=payload, headers=_auth_header(tokens)
+    )
     assert resp.status_code == 201
     pid = resp.json()["id"]
 

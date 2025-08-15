@@ -49,7 +49,9 @@ class NotificationPreference(Base):
     __tablename__ = "notification_preferences"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True
+    )
     tz = Column(String, nullable=False, default="UTC")
     channels_inapp = Column(Boolean, nullable=False, default=True)
     channels_email = Column(Boolean, nullable=False, default=False)
@@ -61,7 +63,9 @@ class NotificationPreference(Base):
     meal_times_local = Column(JSON, nullable=True)
     water_every_min = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
+    )
 
     user = relationship("User")
 
@@ -70,7 +74,9 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     category = Column(SAEnum(NotificationCategory), nullable=False)
     type = Column(SAEnum(NotificationType), nullable=False)
     title = Column(Text, nullable=False)
@@ -80,12 +86,16 @@ class Notification(Base):
     sent_at_utc = Column(DateTime(timezone=True), nullable=True)
     read_at_utc = Column(DateTime(timezone=True), nullable=True)
     dismissed_at_utc = Column(DateTime(timezone=True), nullable=True)
-    status = Column(SAEnum(NotificationStatus), nullable=False, default=NotificationStatus.SCHEDULED)
+    status = Column(
+        SAEnum(NotificationStatus), nullable=False, default=NotificationStatus.SCHEDULED
+    )
     priority = Column(SmallInteger, nullable=False, default=0)
     dedupe_key = Column(String(128), nullable=True)
     delivered_channels = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
+    )
 
     user = relationship("User")
 

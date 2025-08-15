@@ -2,9 +2,13 @@ from fastapi.testclient import TestClient
 
 
 def create_user_and_token(client: TestClient, email: str):
-    reg = client.post("/api/v1/auth/register", json={"email": email, "password": "string"})
+    reg = client.post(
+        "/api/v1/auth/register", json={"email": email, "password": "string"}
+    )
     user_id = reg.json()["id"]
-    login = client.post("/api/v1/auth/login", data={"username": email, "password": "string"})
+    login = client.post(
+        "/api/v1/auth/login", data={"username": email, "password": "string"}
+    )
     token = login.json()["access_token"]
     return user_id, token
 
@@ -25,13 +29,19 @@ def test_idor_read(test_client: TestClient):
         "activity_level": "sedentary",
         "goal": "maintain_weight",
     }
-    res = test_client.post("/api/v1/profiles/", json=profile_payload, headers=auth_headers(token_a))
+    res = test_client.post(
+        "/api/v1/profiles/", json=profile_payload, headers=auth_headers(token_a)
+    )
     profile_id = res.json()["id"]
 
-    res_a = test_client.get(f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_a))
+    res_a = test_client.get(
+        f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_a)
+    )
     assert res_a.status_code == 200
 
-    res_b = test_client.get(f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_b))
+    res_b = test_client.get(
+        f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_b)
+    )
     assert res_b.status_code == 404
 
 
@@ -47,7 +57,9 @@ def test_idor_update_delete_and_listing(test_client: TestClient):
         "activity_level": "lightly_active",
         "goal": "lose_weight",
     }
-    res = test_client.post("/api/v1/profiles/", json=payload, headers=auth_headers(token_a))
+    res = test_client.post(
+        "/api/v1/profiles/", json=payload, headers=auth_headers(token_a)
+    )
     profile_id = res.json()["id"]
 
     # B cannot update
@@ -59,7 +71,9 @@ def test_idor_update_delete_and_listing(test_client: TestClient):
     assert res_b_update.status_code == 404
 
     # B cannot delete
-    res_b_del = test_client.delete(f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_b))
+    res_b_del = test_client.delete(
+        f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_b)
+    )
     assert res_b_del.status_code == 404
 
     # Listing returns only own profile
@@ -69,7 +83,9 @@ def test_idor_update_delete_and_listing(test_client: TestClient):
     assert res_list_b.json() == []
 
     # A can delete
-    res_del_a = test_client.delete(f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_a))
+    res_del_a = test_client.delete(
+        f"/api/v1/profiles/{profile_id}", headers=auth_headers(token_a)
+    )
     assert res_del_a.status_code == 204
 
 
@@ -84,7 +100,9 @@ def test_user_id_ignored_and_auth_required(test_client: TestClient):
         "goal": "gain_weight",
         "user_id": 999,
     }
-    res = test_client.post("/api/v1/profiles/", json=payload, headers=auth_headers(token))
+    res = test_client.post(
+        "/api/v1/profiles/", json=payload, headers=auth_headers(token)
+    )
     assert res.status_code == 201
     data = res.json()
     assert data["user_id"] == user_id

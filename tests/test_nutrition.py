@@ -48,9 +48,13 @@ def test_create_meal_and_day_log(test_client: TestClient, tokens):
             },
         ],
     }
-    res = test_client.post("/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens))
+    res = test_client.post(
+        "/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens)
+    )
     assert res.status_code == 201
-    res = test_client.get(f"/api/v1/nutrition?date={meal_payload['date']}", headers=auth_headers(tokens))
+    res = test_client.get(
+        f"/api/v1/nutrition?date={meal_payload['date']}", headers=auth_headers(tokens)
+    )
     data = res.json()
     assert float(data["totals"]["calories_kcal"]) == 481
     assert data["water_total_ml"] == 0
@@ -65,7 +69,9 @@ def test_future_date_validation(test_client: TestClient, tokens):
         "meal_type": "breakfast",
         "items": [],
     }
-    res = test_client.post("/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens))
+    res = test_client.post(
+        "/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens)
+    )
     assert res.status_code == 400
 
 
@@ -79,7 +85,9 @@ def test_water_logs(test_client: TestClient, tokens):
     )
     assert res.status_code == 201
     day = str(date.today())
-    res = test_client.get(f"/api/v1/nutrition/water?date={day}", headers=auth_headers(tokens))
+    res = test_client.get(
+        f"/api/v1/nutrition/water?date={day}", headers=auth_headers(tokens)
+    )
     data = res.json()
     assert data["total_ml"] == 250
     assert len(data["logs"]) == 1
@@ -88,7 +96,9 @@ def test_water_logs(test_client: TestClient, tokens):
 def test_targets_custom_and_recompute(test_client: TestClient, tokens):
     create_profile(test_client, tokens)
     day = str(date.today())
-    res = test_client.get(f"/api/v1/nutrition/targets?date={day}", headers=auth_headers(tokens))
+    res = test_client.get(
+        f"/api/v1/nutrition/targets?date={day}", headers=auth_headers(tokens)
+    )
     assert res.status_code == 200
     auto = res.json()
     assert auto["source"] == "auto"
@@ -100,16 +110,21 @@ def test_targets_custom_and_recompute(test_client: TestClient, tokens):
         "fat_g_target": 70,
     }
     res = test_client.post(
-        "/api/v1/nutrition/targets/custom", json=custom_payload, headers=auth_headers(tokens)
+        "/api/v1/nutrition/targets/custom",
+        json=custom_payload,
+        headers=auth_headers(tokens),
     )
     assert res.status_code == 200
-    res = test_client.get(f"/api/v1/nutrition/targets?date={day}", headers=auth_headers(tokens))
+    res = test_client.get(
+        f"/api/v1/nutrition/targets?date={day}", headers=auth_headers(tokens)
+    )
     data = res.json()
     assert data["source"] == "custom"
     assert data["calories_target"] == 2300
     # recompute should keep custom
     res = test_client.post(
-        f"/api/v1/nutrition/targets/auto/recompute?date={day}", headers=auth_headers(tokens)
+        f"/api/v1/nutrition/targets/auto/recompute?date={day}",
+        headers=auth_headers(tokens),
     )
     assert res.status_code == 200
     data = res.json()
@@ -136,11 +151,16 @@ def test_summary(test_client: TestClient, tokens):
             }
         ],
     }
-    test_client.post("/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens))
+    test_client.post(
+        "/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens)
+    )
     meal_payload["date"] = day1
-    test_client.post("/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens))
+    test_client.post(
+        "/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens)
+    )
     res = test_client.get(
-        f"/api/v1/nutrition/summary?start={day2}&end={day1}", headers=auth_headers(tokens)
+        f"/api/v1/nutrition/summary?start={day2}&end={day1}",
+        headers=auth_headers(tokens),
     )
     data = res.json()
     assert float(data["totals"]["calories_kcal"]) == 778
@@ -165,7 +185,9 @@ def test_post_daily_summary_and_progress(test_client: TestClient, tokens):
             }
         ],
     }
-    test_client.post("/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens))
+    test_client.post(
+        "/api/v1/nutrition/meal", json=meal_payload, headers=auth_headers(tokens)
+    )
     test_client.post(
         "/api/v1/nutrition/water",
         json={"datetime_utc": datetime.utcnow().isoformat(), "volume_ml": 500},
@@ -182,7 +204,8 @@ def test_post_daily_summary_and_progress(test_client: TestClient, tokens):
     entries = prog.json()
     assert entries[0]["value"] == 131
     water = test_client.get(
-        f"/api/v1/progress?metric=water_ml&start={day}&end={day}", headers=auth_headers(tokens)
+        f"/api/v1/progress?metric=water_ml&start={day}&end={day}",
+        headers=auth_headers(tokens),
     )
     assert water.json()[0]["value"] == 500
 
@@ -210,7 +233,8 @@ def test_auth_and_forbidden(test_client: TestClient, tokens):
         json={"email": "other@example.com", "password": "string"},
     )
     login = test_client.post(
-        "/api/v1/auth/login", data={"username": "other@example.com", "password": "string"}
+        "/api/v1/auth/login",
+        data={"username": "other@example.com", "password": "string"},
     )
     other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
     # create profile for second user to satisfy dependencies
@@ -221,6 +245,7 @@ def test_auth_and_forbidden(test_client: TestClient, tokens):
         headers=other_headers,
     )
     assert res.status_code == 404
+
 
 def test_schedule_reminders(test_client: TestClient, tokens):
     create_profile(test_client, tokens)

@@ -8,7 +8,10 @@ from . import models, schemas
 
 # Meal operations
 
-def create_meal(db: Session, user_id: int, payload: schemas.MealCreate) -> models.NutritionMeal:
+
+def create_meal(
+    db: Session, user_id: int, payload: schemas.MealCreate
+) -> models.NutritionMeal:
     meal = models.NutritionMeal(
         user_id=user_id,
         date=payload.date,
@@ -40,9 +43,15 @@ def create_meal(db: Session, user_id: int, payload: schemas.MealCreate) -> model
 
 
 def get_meal(db: Session, user_id: int, meal_id: int) -> models.NutritionMeal:
-    meal = db.query(models.NutritionMeal).filter(models.NutritionMeal.id == meal_id).first()
+    meal = (
+        db.query(models.NutritionMeal)
+        .filter(models.NutritionMeal.id == meal_id)
+        .first()
+    )
     if not meal:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Meal not found"
+        )
     if meal.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     return meal
@@ -100,11 +109,16 @@ def update_meal_item(
     meal = get_meal(db, user_id, meal_id)
     item = (
         db.query(models.NutritionMealItem)
-        .filter(models.NutritionMealItem.id == item_id, models.NutritionMealItem.meal_id == meal.id)
+        .filter(
+            models.NutritionMealItem.id == item_id,
+            models.NutritionMealItem.meal_id == meal.id,
+        )
         .first()
     )
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+        )
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(item, field, value)
     db.commit()
@@ -116,18 +130,26 @@ def delete_meal_item(db: Session, user_id: int, meal_id: int, item_id: int) -> N
     meal = get_meal(db, user_id, meal_id)
     item = (
         db.query(models.NutritionMealItem)
-        .filter(models.NutritionMealItem.id == item_id, models.NutritionMealItem.meal_id == meal.id)
+        .filter(
+            models.NutritionMealItem.id == item_id,
+            models.NutritionMealItem.meal_id == meal.id,
+        )
         .first()
     )
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+        )
     db.delete(item)
     db.commit()
 
 
 # Water logs
 
-def create_water_log(db: Session, user_id: int, payload: schemas.WaterLogCreate) -> models.NutritionWaterLog:
+
+def create_water_log(
+    db: Session, user_id: int, payload: schemas.WaterLogCreate
+) -> models.NutritionWaterLog:
     log = models.NutritionWaterLog(user_id=user_id, **payload.model_dump())
     db.add(log)
     db.commit()
@@ -135,13 +157,17 @@ def create_water_log(db: Session, user_id: int, payload: schemas.WaterLogCreate)
     return log
 
 
-def list_water_logs(db: Session, user_id: int, day: date) -> List[models.NutritionWaterLog]:
+def list_water_logs(
+    db: Session, user_id: int, day: date
+) -> List[models.NutritionWaterLog]:
     return (
         db.query(models.NutritionWaterLog)
         .filter(
             models.NutritionWaterLog.user_id == user_id,
-            models.NutritionWaterLog.datetime_utc >= datetime.combine(day, datetime.min.time()),
-            models.NutritionWaterLog.datetime_utc < datetime.combine(day, datetime.max.time()),
+            models.NutritionWaterLog.datetime_utc
+            >= datetime.combine(day, datetime.min.time()),
+            models.NutritionWaterLog.datetime_utc
+            < datetime.combine(day, datetime.max.time()),
         )
         .order_by(models.NutritionWaterLog.datetime_utc)
         .all()
@@ -150,10 +176,14 @@ def list_water_logs(db: Session, user_id: int, day: date) -> List[models.Nutriti
 
 # Targets
 
+
 def get_target(db: Session, user_id: int, day: date) -> models.NutritionTarget | None:
     return (
         db.query(models.NutritionTarget)
-        .filter(models.NutritionTarget.user_id == user_id, models.NutritionTarget.date == day)
+        .filter(
+            models.NutritionTarget.user_id == user_id,
+            models.NutritionTarget.date == day,
+        )
         .first()
     )
 
@@ -167,13 +197,18 @@ def upsert_target(
 ) -> models.NutritionTarget:
     target = get_target(db, user_id, day)
     if target:
-        if target.source == models.TargetSource.custom and source == models.TargetSource.auto:
+        if (
+            target.source == models.TargetSource.custom
+            and source == models.TargetSource.auto
+        ):
             return target
         for field, value in data.items():
             setattr(target, field, value)
         target.source = source
     else:
-        target = models.NutritionTarget(user_id=user_id, date=day, source=source, **data)
+        target = models.NutritionTarget(
+            user_id=user_id, date=day, source=source, **data
+        )
         db.add(target)
     db.commit()
     db.refresh(target)

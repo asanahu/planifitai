@@ -10,6 +10,7 @@ from app.dependencies import get_owned_routine
 
 router = APIRouter(prefix="/routines", tags=["routines"])
 
+
 @router.post("/", response_model=schemas.RoutineRead)
 def create_routine(
     routine: schemas.RoutineCreate,
@@ -26,18 +27,20 @@ def read_routines(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return services.get_routines_by_user(db=db, user_id=current_user.id, skip=skip, limit=limit)
+    return services.get_routines_by_user(
+        db=db, user_id=current_user.id, skip=skip, limit=limit
+    )
 
 
 @router.get("/templates", response_model=List[schemas.RoutineRead])
-def read_public_templates(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+def read_public_templates(
+    skip: int = 0, limit: int = 20, db: Session = Depends(get_db)
+):
     return services.get_public_templates(db=db, skip=skip, limit=limit)
 
 
 @router.get("/{routine_id}", response_model=schemas.RoutineRead)
-def read_routine(
-    routine: models.Routine = Depends(get_owned_routine)
-):
+def read_routine(routine: models.Routine = Depends(get_owned_routine)):
     return routine
 
 
@@ -81,7 +84,9 @@ def create_routine_day(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return services.add_day_to_routine(db=db, routine_id=routine.id, day=day, user=current_user)
+    return services.add_day_to_routine(
+        db=db, routine_id=routine.id, day=day, user=current_user
+    )
 
 
 @router.put("/{routine_id}/days/{day_id}", response_model=schemas.RoutineDayRead)
@@ -108,7 +113,9 @@ def delete_routine_day(
     return
 
 
-@router.post("/{routine_id}/days/{day_id}/exercises", response_model=schemas.RoutineExerciseRead)
+@router.post(
+    "/{routine_id}/days/{day_id}/exercises", response_model=schemas.RoutineExerciseRead
+)
 def create_routine_exercise(
     day_id: int,
     exercise: schemas.RoutineExerciseCreate,
@@ -121,7 +128,10 @@ def create_routine_exercise(
     )
 
 
-@router.put("/{routine_id}/days/{day_id}/exercises/{exercise_id}", response_model=schemas.RoutineExerciseRead)
+@router.put(
+    "/{routine_id}/days/{day_id}/exercises/{exercise_id}",
+    response_model=schemas.RoutineExerciseRead,
+)
 def update_routine_exercise(
     exercise_id: int,
     exercise_update: schemas.RoutineExerciseUpdate,
@@ -130,11 +140,17 @@ def update_routine_exercise(
     current_user: UserContext = Depends(get_current_user),
 ):
     return services.update_routine_exercise(
-        db=db, exercise_id=exercise_id, exercise_update=exercise_update, user=current_user
+        db=db,
+        exercise_id=exercise_id,
+        exercise_update=exercise_update,
+        user=current_user,
     )
 
 
-@router.delete("/{routine_id}/days/{day_id}/exercises/{exercise_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{routine_id}/days/{day_id}/exercises/{exercise_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 def delete_routine_exercise(
     exercise_id: int,
     routine: models.Routine = Depends(get_owned_routine),

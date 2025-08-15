@@ -18,9 +18,13 @@ def test_preferences_save_and_get(test_client, auth_headers):
         "quiet_hours_start_local": "22:00",
         "quiet_hours_end_local": "07:00",
     }
-    resp = test_client.put("/api/v1/notifications/preferences", json=data, headers=auth_headers)
+    resp = test_client.put(
+        "/api/v1/notifications/preferences", json=data, headers=auth_headers
+    )
     assert resp.status_code == 200
-    resp_get = test_client.get("/api/v1/notifications/preferences", headers=auth_headers)
+    resp_get = test_client.get(
+        "/api/v1/notifications/preferences", headers=auth_headers
+    )
     body = resp_get.json()
     assert body["tz"] == "Europe/Madrid"
     assert body["channels_email"] is True
@@ -54,7 +58,9 @@ def test_quiet_hours_defer(test_client, auth_headers):
         "quiet_hours_start_local": "22:00",
         "quiet_hours_end_local": "07:00",
     }
-    test_client.put("/api/v1/notifications/preferences", json=pref, headers=auth_headers)
+    test_client.put(
+        "/api/v1/notifications/preferences", json=pref, headers=auth_headers
+    )
     today = dt.date.today()
     weekday = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][today.weekday()]
     active = {weekday: True}

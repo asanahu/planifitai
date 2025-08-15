@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "secret")
 from cryptography.fernet import Fernet
+
 os.environ.setdefault("PHI_ENCRYPTION_KEY", Fernet.generate_key().decode())
 os.environ.setdefault("PHI_PROVIDER", "app")
 
@@ -22,6 +23,7 @@ TestingSessionLocal = sessionmaker(
 
 Base.metadata.create_all(bind=engine)
 
+
 def override_get_db():
     try:
         db = TestingSessionLocal()
@@ -29,7 +31,9 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
+
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -38,6 +42,7 @@ def db_session():
     yield db
     db.close()
     Base.metadata.drop_all(bind=engine)
+
 
 @pytest.fixture(scope="function")
 def test_client(db_session):
@@ -53,7 +58,10 @@ def test_client(db_session):
 
 @pytest.fixture
 def tokens(test_client: TestClient):
-    test_client.post("/api/v1/auth/register", json={"email": "user@example.com", "password": "string"})
+    test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "user@example.com", "password": "string"},
+    )
     login_resp = test_client.post(
         "/api/v1/auth/login",
         data={"username": "user@example.com", "password": "string"},

@@ -1,4 +1,5 @@
 """OpenAI client abstraction with budgeting and simulation support."""
+
 from __future__ import annotations
 
 import json
@@ -31,7 +32,9 @@ class OpenAIProvider:
         self._spent[user_id] = current + cost
 
     # ------------------------------------------------------------------ public
-    def chat(self, user_id: int, messages: List[Dict[str, Any]], *, simulate: bool = False) -> Dict[str, Any]:
+    def chat(
+        self, user_id: int, messages: List[Dict[str, Any]], *, simulate: bool = False
+    ) -> Dict[str, Any]:
         """Return a chat completion.
 
         In ``simulate`` mode a deterministic response is returned and no

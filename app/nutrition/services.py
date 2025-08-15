@@ -27,9 +27,22 @@ GOAL_DELTAS = {
 }
 
 
-def compute_auto_targets(profile: UserProfile, params: schemas.TargetsAutoParams | None = None) -> dict:
-    if not all([profile.age, profile.height_cm, profile.weight_kg, profile.activity_level, profile.goal]):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Profile incomplete for target calculation")
+def compute_auto_targets(
+    profile: UserProfile, params: schemas.TargetsAutoParams | None = None
+) -> dict:
+    if not all(
+        [
+            profile.age,
+            profile.height_cm,
+            profile.weight_kg,
+            profile.activity_level,
+            profile.goal,
+        ]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Profile incomplete for target calculation",
+        )
     params = params or schemas.TargetsAutoParams()
     weight = profile.weight_kg
     height = profile.height_cm
@@ -60,13 +73,18 @@ def compute_auto_targets(profile: UserProfile, params: schemas.TargetsAutoParams
     }
 
 
-def get_or_create_target(db: Session, user_id: int, day: date) -> models.NutritionTarget:
+def get_or_create_target(
+    db: Session, user_id: int, day: date
+) -> models.NutritionTarget:
     target = crud.get_target(db, user_id, day)
     if target:
         return target
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Profile required for targets")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Profile required for targets",
+        )
     data = compute_auto_targets(profile)
     target = crud.upsert_target(db, user_id, day, data, models.TargetSource.auto)
     return target
@@ -87,7 +105,9 @@ def get_day_log(db: Session, user_id: int, day: date) -> schemas.DayLogRead:
     meals = (
         db.query(models.NutritionMeal)
         .options(selectinload(models.NutritionMeal.items))
-        .filter(models.NutritionMeal.user_id == user_id, models.NutritionMeal.date == day)
+        .filter(
+            models.NutritionMeal.user_id == user_id, models.NutritionMeal.date == day
+        )
         .order_by(models.NutritionMeal.id)
         .all()
     )
@@ -96,10 +116,26 @@ def get_day_log(db: Session, user_id: int, day: date) -> schemas.DayLogRead:
     target = get_or_create_target(db, user_id, day)
     totals = day_meal_totals(meals)
     adherence = {
-        "calories": float(totals.calories_kcal) / target.calories_target if target.calories_target else None,
-        "protein": float(totals.protein_g) / float(target.protein_g_target) if target.protein_g_target else None,
-        "carbs": float(totals.carbs_g) / float(target.carbs_g_target) if target.carbs_g_target else None,
-        "fat": float(totals.fat_g) / float(target.fat_g_target) if target.fat_g_target else None,
+        "calories": (
+            float(totals.calories_kcal) / target.calories_target
+            if target.calories_target
+            else None
+        ),
+        "protein": (
+            float(totals.protein_g) / float(target.protein_g_target)
+            if target.protein_g_target
+            else None
+        ),
+        "carbs": (
+            float(totals.carbs_g) / float(target.carbs_g_target)
+            if target.carbs_g_target
+            else None
+        ),
+        "fat": (
+            float(totals.fat_g) / float(target.fat_g_target)
+            if target.fat_g_target
+            else None
+        ),
     }
     return schemas.DayLogRead(
         date=day,
@@ -111,9 +147,13 @@ def get_day_log(db: Session, user_id: int, day: date) -> schemas.DayLogRead:
     )
 
 
-def get_summary(db: Session, user_id: int, start: date, end: date) -> schemas.SummaryRead:
+def get_summary(
+    db: Session, user_id: int, start: date, end: date
+) -> schemas.SummaryRead:
     if start > end:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date range")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date range"
+        )
     current = start
     total_totals = schemas.MacroTotals()
     adherence_acc = {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
@@ -158,11 +198,15 @@ def post_daily_summary(db: Session, user_id: int, day: date):
     updated: list[str] = []
 
     def upsert(metric: progress_models.MetricEnum, value: float, unit: str):
-        existing = db.query(progress_models.ProgressEntry).filter(
-            progress_models.ProgressEntry.user_id == user_id,
-            progress_models.ProgressEntry.date == day,
-            progress_models.ProgressEntry.metric == metric,
-        ).first()
+        existing = (
+            db.query(progress_models.ProgressEntry)
+            .filter(
+                progress_models.ProgressEntry.user_id == user_id,
+                progress_models.ProgressEntry.date == day,
+                progress_models.ProgressEntry.metric == metric,
+            )
+            .first()
+        )
         if existing:
             existing.value = value
             existing.unit = unit
@@ -174,7 +218,11 @@ def post_daily_summary(db: Session, user_id: int, day: date):
             db.add(entry)
             created.append(metric.value)
 
-    upsert(progress_models.MetricEnum.calories_intake, float(day_log.totals.calories_kcal), "kcal")
+    upsert(
+        progress_models.MetricEnum.calories_intake,
+        float(day_log.totals.calories_kcal),
+        "kcal",
+    )
     upsert(progress_models.MetricEnum.protein_g, float(day_log.totals.protein_g), "g")
     upsert(progress_models.MetricEnum.carbs_g, float(day_log.totals.carbs_g), "g")
     upsert(progress_models.MetricEnum.fat_g, float(day_log.totals.fat_g), "g")

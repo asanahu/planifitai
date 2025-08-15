@@ -36,8 +36,9 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     sub = payload.get("sub")
-    user = db.query(User).filter(User.id == int(sub)).first() if sub is not None else None
+    user = (
+        db.query(User).filter(User.id == int(sub)).first() if sub is not None else None
+    )
     if not user:
         raise cred_exc
     return UserContext(id=user.id, email=user.email, is_active=True)
-

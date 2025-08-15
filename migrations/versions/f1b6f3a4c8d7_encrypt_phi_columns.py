@@ -14,9 +14,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     with op.batch_alter_table("user_profiles") as batch_op:
-        batch_op.alter_column("weight_kg", type_=sa.LargeBinary(), existing_nullable=True)
-        batch_op.alter_column("height_cm", type_=sa.LargeBinary(), existing_nullable=True)
-        batch_op.add_column(sa.Column("medical_conditions", sa.LargeBinary(), nullable=True))
+        batch_op.alter_column(
+            "weight_kg", type_=sa.LargeBinary(), existing_nullable=True
+        )
+        batch_op.alter_column(
+            "height_cm", type_=sa.LargeBinary(), existing_nullable=True
+        )
+        batch_op.add_column(
+            sa.Column("medical_conditions", sa.LargeBinary(), nullable=True)
+        )
 
 
 def downgrade() -> None:
