@@ -3,7 +3,7 @@ from datetime import date, timedelta, datetime
 from decimal import Decimal
 from typing import Dict, List
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from . import models, schemas, crud
 from app.user_profile.models import UserProfile, ActivityLevel, Goal
@@ -86,6 +86,7 @@ def day_meal_totals(meals: List[models.NutritionMeal]) -> schemas.MacroTotals:
 def get_day_log(db: Session, user_id: int, day: date) -> schemas.DayLogRead:
     meals = (
         db.query(models.NutritionMeal)
+        .options(selectinload(models.NutritionMeal.items))
         .filter(models.NutritionMeal.user_id == user_id, models.NutritionMeal.date == day)
         .order_by(models.NutritionMeal.id)
         .all()
