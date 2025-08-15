@@ -16,7 +16,7 @@ PlanifitAI is a FastAPI-based API for managing user profiles, authentication, an
     Create a `.env` file in the root directory of the project with the following content:
 
     ```
-    DATABASE_URL="postgresql://postgres:postgres@db:5432/planifitai"
+    DATABASE_URL="postgresql://<user>:<password>@db:5432/planifitai"
     SECRET_KEY="your-secret-key"
     ACCESS_TOKEN_EXPIRE_MINUTES=60
     REFRESH_TOKEN_EXPIRE_DAYS=7
@@ -187,4 +187,4 @@ detect-secrets audit .secrets.baseline
 
 ## Riesgos de Seguridad Conocidos
 
-- `ecdsa` (GHSA-wj6h-64fc-37mp / CVE-2024-23342) es una dependencia transitiva de `python-jose`. Riesgo bajo; se revisará cuando exista una corrección upstream.
+- Migrado de `python-jose` a `PyJWT` (algoritmo HS256) para eliminar la dependencia transitiva de `ecdsa` (GHSA-wj6h-64fc-37mp / CVE-2024-23342).
