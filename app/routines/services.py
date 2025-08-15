@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from . import models, schemas
 from app.auth.deps import UserContext
 from fastapi import HTTPException, status
@@ -8,7 +8,12 @@ from app.notifications.tasks import schedule_routine
 from app.progress import models as progress_models
 
 def get_routine(db: Session, routine_id: int, user: UserContext):
-    routine = db.query(models.Routine).filter(models.Routine.id == routine_id, models.Routine.deleted_at == None).first()
+    routine = (
+        db.query(models.Routine)
+        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .filter(models.Routine.id == routine_id, models.Routine.deleted_at == None)
+        .first()
+    )
     if not routine:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Routine not found")
     if not routine.is_public and routine.owner_id != user.id:
@@ -18,6 +23,7 @@ def get_routine(db: Session, routine_id: int, user: UserContext):
 def get_routines_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 20):
     return (
         db.query(models.Routine)
+        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
         .filter(models.Routine.owner_id == user_id, models.Routine.deleted_at == None)
         .offset(skip)
         .limit(limit)
@@ -27,7 +33,12 @@ def get_routines_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 
 def get_public_templates(db: Session, skip: int = 0, limit: int = 20):
     return (
         db.query(models.Routine)
-        .filter(models.Routine.is_template == True, models.Routine.is_public == True, models.Routine.deleted_at == None)
+        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .filter(
+            models.Routine.is_template == True,
+            models.Routine.is_public == True,
+            models.Routine.deleted_at == None,
+        )
         .offset(skip)
         .limit(limit)
         .all()
@@ -116,7 +127,12 @@ def delete_routine(db: Session, routine_id: int, user: UserContext):
 
 
 def clone_template(db: Session, template_id: int, user: UserContext):
-    template = db.query(models.Routine).filter(models.Routine.id == template_id, models.Routine.is_template == True).first()
+    template = (
+        db.query(models.Routine)
+        .options(selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises))
+        .filter(models.Routine.id == template_id, models.Routine.is_template == True)
+        .first()
+    )
     if not template:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
 
