@@ -188,3 +188,4 @@ detect-secrets audit .secrets.baseline
 ## Riesgos de Seguridad Conocidos
 
 - Migrado de `python-jose` a `PyJWT` (algoritmo HS256) para eliminar la dependencia transitiva de `ecdsa` (GHSA-wj6h-64fc-37mp / CVE-2024-23342).
+- 
