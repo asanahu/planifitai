@@ -52,3 +52,10 @@ ecdsa no está incluida directamente en requirements.txt; es una dependencia tra
 No afecta al flujo actual del MVP.
 
 Se revisará periódicamente para actualizarla cuando la librería que la requiere publique una versión corregida.
+
+## Webhook signing
+
+Las tareas de IA pueden enviar resultados a URLs de `callback` firmados con HMAC
+usando la cabecera `X-Internal-Signature`. El secreto se toma de
+`CELERY_WEBHOOK_SECRET` o `AI_INTERNAL_SECRET`. Se recomienda usar `https` y
+permitir únicamente dominios de confianza.

@@ -10,6 +10,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - AI_SERVICE_URL=http://ai:8080
       - AI_INTERNAL_SECRET=${AI_INTERNAL_SECRET}
     depends_on:
@@ -22,11 +23,12 @@ services:
       - internal
   worker:
     build: .
-    command: celery -A app.core.celery_utils.celery_app worker --loglevel=info
+    command: celery -A app.background.celery_app.celery_app worker --loglevel=INFO --concurrency=1
     volumes:
       - .:/code
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DATABASE_URL=${DATABASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - AI_SERVICE_URL=http://ai:8080
@@ -47,9 +49,14 @@ services:
     ports:
       - "5432:5432"
   redis:
-    image: redis:7
+    image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   ai:
     build: ./services/ai
     environment:
