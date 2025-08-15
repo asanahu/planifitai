@@ -183,3 +183,8 @@ pip install pre-commit detect-secrets gitleaks
 pre-commit install
 detect-secrets scan > .secrets.baseline
 detect-secrets audit .secrets.baseline
+```
+
+## Riesgos de Seguridad Conocidos
+
+- `ecdsa` (GHSA-wj6h-64fc-37mp / CVE-2024-23342) es una dependencia transitiva de `python-jose`. Riesgo bajo; se revisará cuando exista una corrección upstream.
