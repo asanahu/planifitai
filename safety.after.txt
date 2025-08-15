@@ -1,0 +1,14 @@
+
+
+[33m[1m+===========================================================================================================================================================================================+[0m
+
+
+[31m[1mDEPRECATED: [0m[33m[1mthis command (`check`) has been DEPRECATED, and will be unsupported beyond 01 June 2024.[0m
+
+
+[32mWe highly encourage switching to the new [0m[32m[1m`scan`[0m[32m command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.[0m
+
+
+[33m[1m+===========================================================================================================================================================================================+[0m
+
+

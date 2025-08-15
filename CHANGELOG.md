@@ -25,3 +25,8 @@
     -   Added optional `/api/v1/ai` endpoints for workout and nutrition plan generation, chat, insights and recommendations.
     -   Introduced minimal OpenAI provider with budgeting and simulation mode.
     -   Added embedding utilities and Alembic migration for `content_embeddings`.
+
+### Security
+
+- Add Makefile and CI workflow for dependency audits.
+- Pin ecdsa==0.19.1 to document CVE-2024-23342 (no upstream fix; avoid ECDSA signing).
