@@ -12,7 +12,7 @@ redis
 alembic
 passlib[bcrypt]
 bcrypt==3.2.0
-python-jose[cryptography]
+PyJWT
 cryptography
 python-multipart
 email-validator

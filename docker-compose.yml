@@ -7,7 +7,7 @@ services:
     env_file:
     - .env
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/planifitai
+      - DATABASE_URL=${DATABASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
@@ -22,7 +22,7 @@ services:
       - .:/code
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/planifitai
+      - DATABASE_URL=${DATABASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - db
