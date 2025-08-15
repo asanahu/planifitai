@@ -116,3 +116,31 @@ jobs:
           r.raise_for_status()
           PY
 
+  ai-fallback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt requests
+      - name: Start monolith (no AI_SERVICE_URL)
+        env:
+          AI_INTERNAL_SECRET: testsecret1234567890
+          DATABASE_URL: sqlite:///./test.db
+          SECRET_KEY: super-secret-key
+          PHI_ENCRYPTION_KEY: g-EsPSJ4RRKzU4mm2hu5SJPZ0sIL-NTnF9MYqNohuHY=
+        run: |
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/api.log 2>&1 &
+          for i in {1..20}; do
+            curl -sf http://127.0.0.1:8000/health && break
+            sleep 1
+          done
+          echo "API log tail:"; tail -n 50 /tmp/api.log
+      - name: Call AI-dependent endpoint (fallback local)
+        run: |
+          curl -sf http://127.0.0.1:8000/api/v1/ai/echo || (echo "Fallback failed" && exit 1)
+

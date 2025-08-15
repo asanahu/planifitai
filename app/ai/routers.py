@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.ai_client import get_ai_client
 from app.auth.deps import UserContext, get_current_user
 from app.core.database import get_db
 
@@ -12,6 +13,13 @@ from . import schemas, services
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+
+@router.get("/echo")
+def echo() -> dict:
+    client = get_ai_client()
+    client.chat(0, [{"role": "user", "content": "ping"}], simulate=True)
+    return {"message": "ok"}
 
 
 @router.post("/generate/workout-plan", response_model=schemas.WorkoutPlan)
