@@ -1,7 +1,7 @@
-
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
+
 
 # Schemas for ExerciseCatalog
 class ExerciseCatalogBase(BaseModel):
@@ -10,17 +10,21 @@ class ExerciseCatalogBase(BaseModel):
     equipment: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=2000)
 
+
 class ExerciseCatalogCreate(ExerciseCatalogBase):
     pass
 
+
 class ExerciseCatalogUpdate(ExerciseCatalogBase):
     pass
+
 
 class ExerciseCatalogRead(ExerciseCatalogBase):
     id: int
 
     class Config:
         orm_mode = True
+
 
 # Schemas for RoutineExercise
 class RoutineExerciseBase(BaseModel):
@@ -33,11 +37,14 @@ class RoutineExerciseBase(BaseModel):
     notes: Optional[str] = Field(None, max_length=2000)
     order_index: int = 0
 
+
 class RoutineExerciseCreate(RoutineExerciseBase):
     exercise_id: Optional[int] = None
 
+
 class RoutineExerciseUpdate(RoutineExerciseBase):
     exercise_id: Optional[int] = None
+
 
 class RoutineExerciseRead(RoutineExerciseBase):
     id: int
@@ -46,16 +53,20 @@ class RoutineExerciseRead(RoutineExerciseBase):
     class Config:
         orm_mode = True
 
+
 # Schemas for RoutineDay
 class RoutineDayBase(BaseModel):
     weekday: int = Field(..., ge=0, le=6)  # 0=Monday, 6=Sunday
     order_index: int = 0
 
+
 class RoutineDayCreate(RoutineDayBase):
     exercises: List[RoutineExerciseCreate] = []
 
+
 class RoutineDayUpdate(RoutineDayBase):
     exercises: List[RoutineExerciseUpdate] = []
+
 
 class RoutineDayRead(RoutineDayBase):
     id: int
@@ -63,6 +74,7 @@ class RoutineDayRead(RoutineDayBase):
 
     class Config:
         orm_mode = True
+
 
 # Schemas for Routine
 class RoutineBase(BaseModel):
@@ -74,11 +86,14 @@ class RoutineBase(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
 
+
 class RoutineCreate(RoutineBase):
     days: List[RoutineDayCreate] = []
 
+
 class RoutineUpdate(RoutineBase):
     pass
+
 
 class RoutineRead(RoutineBase):
     id: int
@@ -90,9 +105,11 @@ class RoutineRead(RoutineBase):
     class Config:
         orm_mode = True
 
+
 # Schemas for cloning a template
 class CloneFromTemplateRequest(BaseModel):
     template_id: int
+
 
 # Schemas for completing an exercise
 class CompleteExerciseRequest(BaseModel):

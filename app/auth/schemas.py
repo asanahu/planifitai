@@ -1,14 +1,17 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+
 
 class UserRead(BaseModel):
     id: int
     email: EmailStr
     # Pydantic v2: sustituye orm_mode=True
     model_config = ConfigDict(from_attributes=True)
+
 
 class Token(BaseModel):
     access_token: str

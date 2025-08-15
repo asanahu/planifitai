@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 # --- Workout plan -----------------------------------------------------------
 
+
 class WorkoutExercise(BaseModel):
     name: str
     sets: int
@@ -35,6 +36,7 @@ class WorkoutPlanRequest(BaseModel):
 
 
 # --- Nutrition plan ---------------------------------------------------------
+
 
 class MealItem(BaseModel):
     name: str
@@ -70,6 +72,7 @@ class NutritionPlanRequest(BaseModel):
 
 # --- Chat -------------------------------------------------------------------
 
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant", "system"]
     content: str
@@ -88,6 +91,7 @@ class ChatResponse(BaseModel):
 
 # --- Insights ---------------------------------------------------------------
 
+
 class InsightsRequest(BaseModel):
     date_from: str
     date_to: str
@@ -101,6 +105,7 @@ class InsightsResponse(BaseModel):
 
 
 # --- Recommendations --------------------------------------------------------
+
 
 class RecommendRequest(BaseModel):
     namespace: str

@@ -27,11 +27,15 @@ def get_profile(
 ):
     obj = services.get_profile(db, profile_id, current_user)
     if not obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
     return obj
 
 
-@router.post("/", response_model=schemas.UserProfileRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=schemas.UserProfileRead, status_code=status.HTTP_201_CREATED
+)
 def create_profile(
     payload: schemas.UserProfileCreate,
     db: Session = Depends(get_db),
@@ -51,7 +55,9 @@ def update_profile(
 ):
     profile = services.update_profile(db, profile_id, payload, current_user)
     if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
     logger.info("Profile updated for user %s", current_user.id)
     return profile
 
@@ -64,6 +70,8 @@ def delete_profile(
 ):
     ok = services.delete_profile(db, profile_id, current_user)
     if not ok:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
     logger.info("Profile deleted for user %s", current_user.id)
     return

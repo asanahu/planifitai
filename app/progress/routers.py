@@ -11,13 +11,21 @@ from . import schemas, services, models
 router = APIRouter(prefix="/progress", tags=["progress"])
 
 
-@router.post("/", response_model=list[schemas.ProgressEntryRead], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=list[schemas.ProgressEntryRead],
+    status_code=status.HTTP_201_CREATED,
+)
 def create_progress(
     payload: schemas.ProgressEntryCreate | schemas.ProgressEntryCreateBulk,
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    entries = payload.items if isinstance(payload, schemas.ProgressEntryCreateBulk) else [payload]
+    entries = (
+        payload.items
+        if isinstance(payload, schemas.ProgressEntryCreateBulk)
+        else [payload]
+    )
     return services.create_entries(db, current_user.id, entries)
 
 
@@ -42,11 +50,18 @@ def get_summary(
     current_user: UserContext = Depends(get_current_user),
 ):
     if window and window not in (7, 30, 90):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid window")
-    return services.summary(db, current_user.id, metric, start=start, end=end, window_days=window)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid window"
+        )
+    return services.summary(
+        db, current_user.id, metric, start=start, end=end, window_days=window
+    )
 
 
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_progress(entry: models.ProgressEntry = Depends(get_owned_progress_entry), db: Session = Depends(get_db)):
+def delete_progress(
+    entry: models.ProgressEntry = Depends(get_owned_progress_entry),
+    db: Session = Depends(get_db),
+):
     services.delete_entry(db, entry.user_id, entry.id)
     return

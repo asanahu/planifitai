@@ -4,6 +4,7 @@ Revision ID: d1a5f8bda1a6
 Revises: b234998e2f1b
 Create Date: 2025-08-13 12:00:00.000000
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -35,7 +36,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        "ix_nutrition_meals_user_date", "nutrition_meals", ["user_id", "date"], unique=False
+        "ix_nutrition_meals_user_date",
+        "nutrition_meals",
+        ["user_id", "date"],
+        unique=False,
     )
 
     op.create_table(
@@ -58,7 +62,9 @@ def upgrade() -> None:
         sa.Column("sugar_g", sa.Numeric(10, 2), nullable=True),
         sa.Column("sodium_mg", sa.Numeric(10, 2), nullable=True),
         sa.Column("order_index", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["meal_id"], ["nutrition_meals.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["meal_id"], ["nutrition_meals.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 

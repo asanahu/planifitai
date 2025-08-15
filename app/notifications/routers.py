@@ -18,10 +18,14 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 @router.get("/preferences", response_model=schemas.NotificationPreferences)
-def get_preferences(current_user: UserContext = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_preferences(
+    current_user: UserContext = Depends(get_current_user), db: Session = Depends(get_db)
+):
     pref = crud.get_preferences(db, current_user.id)
     if not pref:
-        pref = crud.upsert_preferences(db, current_user.id, schemas.NotificationPreferencesUpdate())
+        pref = crud.upsert_preferences(
+            db, current_user.id, schemas.NotificationPreferencesUpdate()
+        )
     return pref
 
 
@@ -80,7 +84,9 @@ def list_notifications_endpoint(
     current_user: UserContext = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    notifs = crud.list_notifications(db, current_user.id, status=status, limit=limit, offset=offset)
+    notifs = crud.list_notifications(
+        db, current_user.id, status=status, limit=limit, offset=offset
+    )
     return notifs
 
 

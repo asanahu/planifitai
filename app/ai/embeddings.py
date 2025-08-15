@@ -1,4 +1,5 @@
 """Utility helpers for handling content embeddings."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -21,7 +22,9 @@ class ContentEmbedding(Base):
     embedding = Column(JSON, nullable=False)
 
     __table_args__ = (
-        Index("ix_content_embeddings_namespace_ref", "namespace", "ref_id", unique=True),
+        Index(
+            "ix_content_embeddings_namespace_ref", "namespace", "ref_id", unique=True
+        ),
     )
 
 
@@ -33,7 +36,9 @@ def upsert_embedding(
     metadata: Dict[str, Any] | None,
     vector: List[float],
 ) -> ContentEmbedding:
-    obj = db.query(ContentEmbedding).filter_by(namespace=namespace, ref_id=ref_id).first()
+    obj = (
+        db.query(ContentEmbedding).filter_by(namespace=namespace, ref_id=ref_id).first()
+    )
     if obj:
         obj.title = title
         obj.meta = metadata
@@ -60,7 +65,9 @@ def _cosine(a: List[float], b: List[float]) -> float:
     return dot / (na * nb)
 
 
-def search_similar(db: Session, namespace: str, vector: List[float], k: int = 5) -> List[Dict[str, Any]]:
+def search_similar(
+    db: Session, namespace: str, vector: List[float], k: int = 5
+) -> List[Dict[str, Any]]:
     items = db.query(ContentEmbedding).filter_by(namespace=namespace).all()
     scored = []
     for item in items:

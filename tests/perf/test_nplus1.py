@@ -22,9 +22,7 @@ def seed_routines_data(test_client, auth_headers_user_a):
         "days": [
             {
                 "weekday": 0,
-                "exercises": [
-                    {"exercise_name": "Push", "sets": 1, "reps": 1}
-                ],
+                "exercises": [{"exercise_name": "Push", "sets": 1, "reps": 1}],
             }
         ],
     }
@@ -99,9 +97,7 @@ def test_list_routines_queries_are_minimal(
     assert qc["n"] == 4, f"Queries inesperadas: {qc['n']}\n{qc['stmts'][:5]}"
 
 
-def test_day_log_queries_are_minimal(
-    test_client, seed_meals_data, auth_headers_user_a
-):
+def test_day_log_queries_are_minimal(test_client, seed_meals_data, auth_headers_user_a):
     day = str(date.today())
     with count_queries(engine) as qc:
         res = test_client.get(

@@ -11,25 +11,42 @@ from . import models, schemas
 logger = logging.getLogger(__name__)
 
 
-def create_entries(db: Session, user_id: int, entries: List[schemas.ProgressEntryCreate]):
-    objs = [models.ProgressEntry(user_id=user_id, **entry.model_dump()) for entry in entries]
+def create_entries(
+    db: Session, user_id: int, entries: List[schemas.ProgressEntryCreate]
+):
+    objs = [
+        models.ProgressEntry(user_id=user_id, **entry.model_dump()) for entry in entries
+    ]
     db.add_all(objs)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Entry already exists for date+metric")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Entry already exists for date+metric",
+        )
     for obj in objs:
         db.refresh(obj)
     logger.info("Created %s progress entries for user %s", len(objs), user_id)
     return objs
 
 
-def list_entries(db: Session, user_id: int, metric: Optional[models.MetricEnum] = None,
-                 start: Optional[date] = None, end: Optional[date] = None):
+def list_entries(
+    db: Session,
+    user_id: int,
+    metric: Optional[models.MetricEnum] = None,
+    start: Optional[date] = None,
+    end: Optional[date] = None,
+):
     if start and end and start > end:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date range: start > end")
-    query = db.query(models.ProgressEntry).filter(models.ProgressEntry.user_id == user_id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid date range: start > end",
+        )
+    query = db.query(models.ProgressEntry).filter(
+        models.ProgressEntry.user_id == user_id
+    )
     if metric:
         query = query.filter(models.ProgressEntry.metric == metric)
     if start:
@@ -39,19 +56,37 @@ def list_entries(db: Session, user_id: int, metric: Optional[models.MetricEnum] 
     return query.order_by(models.ProgressEntry.date.asc()).all()
 
 
-def summary(db: Session, user_id: int, metric: models.MetricEnum,
-            start: Optional[date] = None, end: Optional[date] = None,
-            window_days: Optional[int] = None):
+def summary(
+    db: Session,
+    user_id: int,
+    metric: models.MetricEnum,
+    start: Optional[date] = None,
+    end: Optional[date] = None,
+    window_days: Optional[int] = None,
+):
     if window_days:
         end = end or date.today()
         start = start or end - timedelta(days=window_days)
     if start and end and start > end:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date range: start > end")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid date range: start > end",
+        )
     entries = list_entries(db, user_id, metric, start, end)
     count = len(entries)
     if count == 0:
-        return schemas.ProgressSummary(metric=metric, count=0, min=None, max=None, avg=None,
-                                       first=None, last=None, delta=None, start=start, end=end)
+        return schemas.ProgressSummary(
+            metric=metric,
+            count=0,
+            min=None,
+            max=None,
+            avg=None,
+            first=None,
+            last=None,
+            delta=None,
+            start=start,
+            end=end,
+        )
     values = [e.value for e in entries]
     first_val = values[0]
     last_val = values[-1]
@@ -70,12 +105,18 @@ def summary(db: Session, user_id: int, metric: models.MetricEnum,
 
 
 def delete_entry(db: Session, user_id: int, entry_id: int):
-    entry = db.query(models.ProgressEntry).filter(
-        models.ProgressEntry.id == entry_id,
-        models.ProgressEntry.user_id == user_id,
-    ).first()
+    entry = (
+        db.query(models.ProgressEntry)
+        .filter(
+            models.ProgressEntry.id == entry_id,
+            models.ProgressEntry.user_id == user_id,
+        )
+        .first()
+    )
     if not entry:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found"
+        )
     db.delete(entry)
     db.commit()
     logger.info("Deleted progress entry %s for user %s", entry_id, user_id)

@@ -9,7 +9,9 @@ from . import models, schemas
 
 def get_preferences(db: Session, user_id: int) -> models.NotificationPreference:
     pref = db.execute(
-        select(models.NotificationPreference).where(models.NotificationPreference.user_id == user_id)
+        select(models.NotificationPreference).where(
+            models.NotificationPreference.user_id == user_id
+        )
     ).scalar_one_or_none()
     return pref
 
@@ -28,7 +30,9 @@ def upsert_preferences(
     return pref
 
 
-def create_notification(db: Session, notif: schemas.NotificationCreate) -> models.Notification:
+def create_notification(
+    db: Session, notif: schemas.NotificationCreate
+) -> models.Notification:
     if notif.dedupe_key:
         existing = db.execute(
             select(models.Notification).where(
@@ -67,7 +71,11 @@ def list_notifications(
         stmt = stmt.where(models.Notification.read_at_utc.is_(None))
     elif status:
         stmt = stmt.where(models.Notification.status == status)
-    stmt = stmt.order_by(models.Notification.scheduled_at_utc.desc()).limit(limit).offset(offset)
+    stmt = (
+        stmt.order_by(models.Notification.scheduled_at_utc.desc())
+        .limit(limit)
+        .offset(offset)
+    )
     return list(db.execute(stmt).scalars())
 
 
@@ -85,7 +93,9 @@ def mark_dismissed(db: Session, notif: models.Notification) -> models.Notificati
     return notif
 
 
-def get_notification(db: Session, user_id: int, notif_id: int) -> models.Notification | None:
+def get_notification(
+    db: Session, user_id: int, notif_id: int
+) -> models.Notification | None:
     return db.execute(
         select(models.Notification).where(
             models.Notification.id == notif_id, models.Notification.user_id == user_id

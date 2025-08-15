@@ -22,10 +22,20 @@ def upgrade() -> None:
     op.create_table(
         "notification_preferences",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column(
+            "user_id",
+            sa.Integer,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("tz", sa.String, nullable=False, server_default="UTC"),
-        sa.Column("channels_inapp", sa.Boolean, nullable=False, server_default=sa.true()),
-        sa.Column("channels_email", sa.Boolean, nullable=False, server_default=sa.false()),
+        sa.Column(
+            "channels_inapp", sa.Boolean, nullable=False, server_default=sa.true()
+        ),
+        sa.Column(
+            "channels_email", sa.Boolean, nullable=False, server_default=sa.false()
+        ),
         sa.Column("quiet_hours_start_local", sa.Time, nullable=True),
         sa.Column("quiet_hours_end_local", sa.Time, nullable=True),
         sa.Column("daily_digest_time_local", sa.Time, nullable=True),
@@ -33,15 +43,32 @@ def upgrade() -> None:
         sa.Column("weekly_digest_time_local", sa.Time, nullable=True),
         sa.Column("meal_times_local", sa.JSON, nullable=True),
         sa.Column("water_every_min", sa.Integer, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+        ),
     )
-    op.create_index("ix_notification_pref_user", "notification_preferences", ["user_id"], unique=True)
+    op.create_index(
+        "ix_notification_pref_user",
+        "notification_preferences",
+        ["user_id"],
+        unique=True,
+    )
 
     op.create_table(
         "notifications",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "user_id",
+            sa.Integer,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("category", sa.String, nullable=False),
         sa.Column("type", sa.String, nullable=False),
         sa.Column("title", sa.Text, nullable=False),
@@ -55,12 +82,26 @@ def upgrade() -> None:
         sa.Column("priority", sa.SmallInteger, nullable=False, server_default="0"),
         sa.Column("dedupe_key", sa.String(length=128), nullable=True),
         sa.Column("delivered_channels", sa.JSON, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+        ),
     )
-    op.create_index("ix_notifications_user_sched", "notifications", ["user_id", "scheduled_at_utc"])
+    op.create_index(
+        "ix_notifications_user_sched", "notifications", ["user_id", "scheduled_at_utc"]
+    )
     op.create_index("ix_notifications_status", "notifications", ["status"])
-    op.create_index("ix_notifications_dedupe", "notifications", ["user_id", "dedupe_key"], unique=True)
+    op.create_index(
+        "ix_notifications_dedupe",
+        "notifications",
+        ["user_id", "dedupe_key"],
+        unique=True,
+    )
 
 
 def downgrade() -> None:

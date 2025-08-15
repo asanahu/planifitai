@@ -11,7 +11,9 @@ def get_profile_by_user_id(db: Session, user_id: int) -> UserProfile | None:
     return db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
 
 
-def get_profile(db: Session, profile_id: int, current_user: UserContext) -> UserProfile | None:
+def get_profile(
+    db: Session, profile_id: int, current_user: UserContext
+) -> UserProfile | None:
     return (
         db.query(UserProfile)
         .filter(UserProfile.id == profile_id, UserProfile.user_id == current_user.id)
@@ -23,7 +25,9 @@ def list_my_profiles(db: Session, current_user: UserContext) -> list[UserProfile
     return db.query(UserProfile).filter(UserProfile.user_id == current_user.id).all()
 
 
-def create_profile(db: Session, data: UserProfileCreate, current_user: UserContext) -> UserProfile:
+def create_profile(
+    db: Session, data: UserProfileCreate, current_user: UserContext
+) -> UserProfile:
     obj = UserProfile(**data.model_dump())
     obj.user_id = current_user.id
     db.add(obj)

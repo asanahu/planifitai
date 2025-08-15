@@ -4,6 +4,7 @@ from app.core.database import Base
 import enum
 from app.security.types import EncryptedFloat, EncryptedString
 
+
 class ActivityLevel(str, enum.Enum):
     SEDENTARY = "sedentary"
     LIGHTLY_ACTIVE = "lightly_active"
@@ -11,16 +12,20 @@ class ActivityLevel(str, enum.Enum):
     VERY_ACTIVE = "very_active"
     EXTRA_ACTIVE = "extra_active"
 
+
 class Goal(str, enum.Enum):
     LOSE_WEIGHT = "lose_weight"
     MAINTAIN_WEIGHT = "maintain_weight"
     GAIN_WEIGHT = "gain_weight"
 
+
 class UserProfile(Base):
     __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id"), unique=True, index=True, nullable=False
+    )
     full_name = Column(String, index=True)
     age = Column(Integer)
     height_cm = Column(EncryptedFloat)
@@ -30,4 +35,3 @@ class UserProfile(Base):
     goal = Column(Enum(Goal))
 
     user = relationship("User", back_populates="profile")
-

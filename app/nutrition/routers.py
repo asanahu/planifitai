@@ -14,14 +14,18 @@ from . import schemas, services, crud, models
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
 
-@router.post("/meal", response_model=schemas.MealRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/meal", response_model=schemas.MealRead, status_code=status.HTTP_201_CREATED
+)
 def create_meal(
     payload: schemas.MealCreate,
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
     if payload.date > date.today():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Future date not allowed")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Future date not allowed"
+        )
     meal = crud.create_meal(db, current_user.id, payload)
     return schemas.MealRead.model_validate(meal)
 
@@ -47,14 +51,22 @@ def update_meal(
 
 
 @router.delete("/meal/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_meal(meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)):
+def delete_meal(
+    meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)
+):
     crud.delete_meal(db, meal.user_id, meal.id)
     return
 
 
-@router.post("/meal/{meal_id}/items", response_model=schemas.MealItemRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/meal/{meal_id}/items",
+    response_model=schemas.MealItemRead,
+    status_code=status.HTTP_201_CREATED,
+)
 def add_item(
-    payload: schemas.MealItemCreate, meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)
+    payload: schemas.MealItemCreate,
+    meal: models.NutritionMeal = Depends(get_owned_meal),
+    db: Session = Depends(get_db),
 ):
     item = crud.add_meal_item(db, meal.user_id, meal.id, payload)
     return schemas.MealItemRead.model_validate(item)
@@ -71,13 +83,21 @@ def update_item(
     return schemas.MealItemRead.model_validate(item)
 
 
-@router.delete("/meal/{meal_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_item(item_id: int, meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)):
+@router.delete(
+    "/meal/{meal_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_item(
+    item_id: int,
+    meal: models.NutritionMeal = Depends(get_owned_meal),
+    db: Session = Depends(get_db),
+):
     crud.delete_meal_item(db, meal.user_id, meal.id, item_id)
     return
 
 
-@router.post("/water", response_model=schemas.WaterLogRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/water", response_model=schemas.WaterLogRead, status_code=status.HTTP_201_CREATED
+)
 def create_water_log(
     payload: schemas.WaterLogCreate,
     db: Session = Depends(get_db),
@@ -95,7 +115,10 @@ def get_water_logs(
 ):
     logs = crud.list_water_logs(db, current_user.id, date)
     total = sum(l.volume_ml for l in logs)
-    return {"total_ml": total, "logs": [schemas.WaterLogRead.model_validate(l) for l in logs]}
+    return {
+        "total_ml": total,
+        "logs": [schemas.WaterLogRead.model_validate(l) for l in logs],
+    }
 
 
 @router.get("/targets", response_model=schemas.TargetsRead)
@@ -115,7 +138,9 @@ def set_custom_targets(
     current_user: UserContext = Depends(get_current_user),
 ):
     data = payload.model_dump(exclude={"date"})
-    target = crud.upsert_target(db, current_user.id, payload.date, data, models.TargetSource.custom)
+    target = crud.upsert_target(
+        db, current_user.id, payload.date, data, models.TargetSource.custom
+    )
     return schemas.TargetsRead.model_validate(target)
 
 
@@ -127,9 +152,14 @@ def recompute_targets(
 ):
     profile = db.query(UserProfile).filter_by(user_id=current_user.id).first()
     if not profile:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Profile required for targets")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Profile required for targets",
+        )
     data = services.compute_auto_targets(profile)
-    target = crud.upsert_target(db, current_user.id, date, data, models.TargetSource.auto)
+    target = crud.upsert_target(
+        db, current_user.id, date, data, models.TargetSource.auto
+    )
     return schemas.TargetsRead.model_validate(target)
 
 

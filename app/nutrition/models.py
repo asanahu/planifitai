@@ -46,9 +46,7 @@ class TargetSource(str, enum.Enum):
 
 class NutritionMeal(Base):
     __tablename__ = "nutrition_meals"
-    __table_args__ = (
-        Index("ix_nutrition_meals_user_date", "user_id", "date"),
-    )
+    __table_args__ = (Index("ix_nutrition_meals_user_date", "user_id", "date"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
@@ -88,9 +86,7 @@ class NutritionMealItem(Base):
     food_id = Column(Integer, nullable=True)
     food_name = Column(String(255), nullable=True)
     serving_qty = Column(Numeric(10, 2), nullable=False)
-    serving_unit = Column(
-        SqlEnum(ServingUnit, name="servingunit"), nullable=False
-    )
+    serving_unit = Column(SqlEnum(ServingUnit, name="servingunit"), nullable=False)
     calories_kcal = Column(Numeric(10, 2), nullable=False)
     protein_g = Column(Numeric(10, 2), nullable=False)
     carbs_g = Column(Numeric(10, 2), nullable=False)

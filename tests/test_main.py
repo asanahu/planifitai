@@ -8,14 +8,23 @@ def test_health_check(test_client: TestClient):
 
 
 def test_create_user(test_client: TestClient):
-    response = test_client.post("/api/v1/auth/register", json={"email": "test@example.com", "password": "string"})
+    response = test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "test@example.com", "password": "string"},
+    )
     assert response.status_code == 201
     assert response.json()["email"] == "test@example.com"
 
 
 def test_login(test_client: TestClient):
-    test_client.post("/api/v1/auth/register", json={"email": "test2@example.com", "password": "string"})
-    response = test_client.post("/api/v1/auth/login", data={"username": "test2@example.com", "password": "string"})
+    test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "test2@example.com", "password": "string"},
+    )
+    response = test_client.post(
+        "/api/v1/auth/login",
+        data={"username": "test2@example.com", "password": "string"},
+    )
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
@@ -24,8 +33,14 @@ def test_login(test_client: TestClient):
 
 
 def test_create_profile(test_client: TestClient):
-    test_client.post("/api/v1/auth/register", json={"email": "test3@example.com", "password": "string"})
-    login_response = test_client.post("/api/v1/auth/login", data={"username": "test3@example.com", "password": "string"})
+    test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "test3@example.com", "password": "string"},
+    )
+    login_response = test_client.post(
+        "/api/v1/auth/login",
+        data={"username": "test3@example.com", "password": "string"},
+    )
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
     profile_data = {
         "full_name": "Test User",
@@ -41,8 +56,14 @@ def test_create_profile(test_client: TestClient):
 
 
 def test_get_profile(test_client: TestClient):
-    test_client.post("/api/v1/auth/register", json={"email": "test4@example.com", "password": "string"})
-    login_response = test_client.post("/api/v1/auth/login", data={"username": "test4@example.com", "password": "string"})
+    test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "test4@example.com", "password": "string"},
+    )
+    login_response = test_client.post(
+        "/api/v1/auth/login",
+        data={"username": "test4@example.com", "password": "string"},
+    )
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
     profile_data = {
         "full_name": "Test User 2",
@@ -60,8 +81,14 @@ def test_get_profile(test_client: TestClient):
 
 
 def test_update_profile(test_client: TestClient):
-    test_client.post("/api/v1/auth/register", json={"email": "test5@example.com", "password": "string"})
-    login_response = test_client.post("/api/v1/auth/login", data={"username": "test5@example.com", "password": "string"})
+    test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "test5@example.com", "password": "string"},
+    )
+    login_response = test_client.post(
+        "/api/v1/auth/login",
+        data={"username": "test5@example.com", "password": "string"},
+    )
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
     profile_data = {
         "full_name": "Test User 3",
@@ -74,6 +101,8 @@ def test_update_profile(test_client: TestClient):
     res = test_client.post("/api/v1/profiles/", json=profile_data, headers=headers)
     profile_id = res.json()["id"]
     update_data = {"full_name": "Updated Test User"}
-    response = test_client.put(f"/api/v1/profiles/{profile_id}", json=update_data, headers=headers)
+    response = test_client.put(
+        f"/api/v1/profiles/{profile_id}", json=update_data, headers=headers
+    )
     assert response.status_code == 200
     assert response.json()["full_name"] == "Updated Test User"

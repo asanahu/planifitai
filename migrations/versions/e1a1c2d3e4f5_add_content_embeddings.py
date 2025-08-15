@@ -4,6 +4,7 @@ Revision ID: e1a1c2d3e4f5
 Revises: 9c1d2e8fa5c5
 Create Date: 2024-08-14 00:00:00.000000
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -36,5 +37,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_content_embeddings_namespace_ref", table_name="content_embeddings")
+    op.drop_index(
+        "ix_content_embeddings_namespace_ref", table_name="content_embeddings"
+    )
     op.drop_table("content_embeddings")

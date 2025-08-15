@@ -12,9 +12,7 @@ def rotate_phi_key(old_key: str, new_key: str, session: Session) -> None:
     old = AppCryptoProvider(old_key)
     new = AppCryptoProvider(new_key)
     rows = session.execute(
-        text(
-            "SELECT id, weight_kg, height_cm, medical_conditions FROM user_profiles"
-        )
+        text("SELECT id, weight_kg, height_cm, medical_conditions FROM user_profiles")
     ).mappings()
     for row in rows:
         w = old.decrypt_float(row["weight_kg"])
@@ -24,7 +22,12 @@ def rotate_phi_key(old_key: str, new_key: str, session: Session) -> None:
             text(
                 "UPDATE user_profiles SET weight_kg=:w, height_cm=:h, medical_conditions=:m WHERE id=:id"
             ),
-            {"w": new.encrypt_float(w), "h": new.encrypt_float(h), "m": new.encrypt_str(m), "id": row["id"]},
+            {
+                "w": new.encrypt_float(w),
+                "h": new.encrypt_float(h),
+                "m": new.encrypt_str(m),
+                "id": row["id"],
+            },
         )
     session.commit()
 
@@ -38,4 +41,3 @@ def main() -> None:  # pragma: no cover - CLI usage
 
 if __name__ == "__main__":  # pragma: no cover
     main()
-
