@@ -183,4 +183,3 @@ pip install pre-commit detect-secrets gitleaks
 pre-commit install
 detect-secrets scan > .secrets.baseline
 detect-secrets audit .secrets.baseline
-
