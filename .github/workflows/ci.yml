@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0           # necesario para que gitleaks resuelva rangos de commits en PRs
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -27,30 +27,37 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 pytest pip-audit safety
+          pip install pytest ruff black bandit safety pip-audit
 
-      # Escaneo de secretos SIEMPRE en servidor
+      # 1) Secret scan (servidor) — BLOQUEANTE
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Si alguna vez vuelve a fallar por rangos, descomenta:
-          # GITLEAKS_ENABLE_COMMIT_RANGE: "false"
-          # Si tienes .gitleaks.toml en raíz, también puedes indicar:
-          # GITLEAKS_CONFIG: ".gitleaks.toml"
 
-      # Estilo no bloqueante (avisa pero no rompe)
-      - name: flake8 (non-blocking)
-        run: flake8 || true
+      # 2) Lint rápido con Ruff — BLOQUEANTE (sustituye a flake8)
+      - name: Ruff (lint)
+        run: ruff check .
 
-      # Tests BLOQUEANTES
-      - name: pytest
+      # 3) Formato con Black (modo check) — BLOQUEANTE
+      - name: Black (check)
+        run: black --check .
+
+      # 4) Análisis estático de seguridad — NO bloqueante (reduce falsos positivos)
+      - name: Bandit (best-effort)
+        run: |
+          # Ajusta "app" si tu código vive en otra carpeta
+          bandit -q -r app || true
+
+      # 5) Tests — BLOQUEANTE
+      - name: Pytest
         run: pytest -q
 
-      # Auditoría de dependencias BLOQUEANTE
+      # 6) Auditoría de dependencias — BLOQUEANTE
       - name: pip-audit (strict)
         run: pip-audit -r requirements.txt --strict
 
-      # safety opcional/best-effort (no bloquea si no hay conexión)
-      - name: safety (best-effort)
+      # 7) Safety — NO bloqueante (a veces falla por red/servidor)
+      - name: Safety (best-effort)
         run: safety check -r requirements.txt || true
+
