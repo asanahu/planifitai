@@ -27,6 +27,17 @@ After rotation update `PHI_ENCRYPTION_KEY` and restart the app.
 Encrypted values cannot be searched or filtered by range. Additional techniques
 like hashing or tokenization are required for such queries.
 
+## Bandit
+
+El análisis estático con Bandit en CI excluye los directorios `tests/` y
+`migrations/` porque su código no se ejecuta en producción y suele generar
+falsos positivos. Para revisar todo el árbol de código localmente, ejecutar:
+
+```
+bandit -q -r app
+bandit -q -r services/ai
+```
+
 ##⚠ Aviso de seguridad pendiente
 
 El pipeline de CI detecta la siguiente vulnerabilidad con pip-audit --strict:
