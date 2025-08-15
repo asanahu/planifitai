@@ -14,7 +14,6 @@ passlib[bcrypt]
 bcrypt==3.2.0
 python-jose[cryptography]
 cryptography
-ecdsa==0.19.1 # CVE-2024-23342 no fix yet, avoid ECDSA operations
 python-multipart
 email-validator
 pytest
