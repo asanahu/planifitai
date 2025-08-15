@@ -11,7 +11,7 @@ celery[redis]
 redis
 alembic
 passlib[bcrypt]
-bcrypt==3.2.0
+bcrypt==4.3.0
 PyJWT
 cryptography
 python-multipart
