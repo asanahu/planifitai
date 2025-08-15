@@ -48,7 +48,7 @@ jobs:
       - name: Bandit (best-effort)
         run: |
           # Ajusta "app" si tu código vive en otra carpeta
-          bandit -q -r app || true
+          bandit -q -r app -c bandit.yaml || true
 
       # 5) Tests — BLOQUEANTE
       - name: Pytest
@@ -69,7 +69,7 @@ jobs:
         run: black --check services/ai
 
       - name: Bandit (ai service)
-        run: bandit -q -r services/ai || true
+        run: bandit -q -r services/ai -c bandit.yaml || true
 
       - name: Pytest (ai service)
         run: pytest -q services/ai/tests
