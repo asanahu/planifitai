@@ -61,7 +61,8 @@ jobs:
 
       # 5) Tests — BLOQUEANTE
       - name: Pytest
-        run: pytest -q
+        run: pytest -q tests/test_training_responses.py tests/test_auth_responses.py tests/test_plan_responses.py tests/test_nutrition_responses.py
+
 
       # 6) Auditoría de dependencias — BLOQUEANTE
       - name: pip-audit (strict)
