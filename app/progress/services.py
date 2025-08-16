@@ -3,8 +3,8 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from . import models, schemas
 

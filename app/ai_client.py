@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from app.core.config import settings
 from app.ai.provider import OpenAIProvider
+from app.core.config import settings
 
 
 class AiClient:

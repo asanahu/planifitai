@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 from enum import Enum
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
-    Enum as SAEnum,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     SmallInteger,
     String,
     Text,
     Time,
     func,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import relationship
 

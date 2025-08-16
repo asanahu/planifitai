@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 from . import schemas, services
 
-
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 

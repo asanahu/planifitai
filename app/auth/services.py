@@ -3,11 +3,11 @@ from typing import Optional
 
 import jwt
 from jwt import PyJWTError
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.auth.models import User
+from app.core.config import settings
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

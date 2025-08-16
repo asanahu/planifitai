@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from fastapi import APIRouter, HTTPException, Request
-from celery.result import AsyncResult
+
 import redis
+from celery.result import AsyncResult
+from fastapi import APIRouter, HTTPException, Request
 
 from app.background.celery_app import celery_app
 from app.background.tasks import chat_task, embeddings_task

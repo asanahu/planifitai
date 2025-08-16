@@ -2,8 +2,8 @@
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "f1b6f3a4c8d7"  # pragma: allowlist secret

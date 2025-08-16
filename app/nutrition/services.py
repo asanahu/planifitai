@@ -1,13 +1,15 @@
 import logging
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Dict, List
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, selectinload
 
-from . import models, schemas, crud
-from app.user_profile.models import UserProfile, ActivityLevel, Goal
 from app.progress import models as progress_models
+from app.user_profile.models import ActivityLevel, Goal, UserProfile
+
+from . import crud, models, schemas
 
 logger = logging.getLogger(__name__)
 

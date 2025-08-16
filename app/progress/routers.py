@@ -1,12 +1,13 @@
 from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.auth.deps import UserContext, get_current_user
+from app.core.database import get_db
 from app.dependencies import get_owned_progress_entry
 
-from . import schemas, services, models
+from . import models, schemas, services
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 

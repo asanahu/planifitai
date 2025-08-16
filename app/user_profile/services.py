@@ -1,10 +1,10 @@
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
+from app.auth.deps import UserContext
 from app.user_profile.models import UserProfile
 from app.user_profile.schemas import UserProfileCreate, UserProfileUpdate
-from app.auth.deps import UserContext
 
 
 def get_profile_by_user_id(db: Session, user_id: int) -> UserProfile | None:
