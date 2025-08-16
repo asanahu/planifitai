@@ -1,4 +1,4 @@
-name: Auto Format (Black)
+name: Auto Format (Black & Ruff)
 
 on:
   push:
@@ -20,17 +20,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Black
+      - name: Install Black & Ruff
         run: |
           python -m pip install --upgrade pip
-          pip install black
-      - name: Run Black
-        run: black .
+          pip install black ruff
+      - name: Run formatters
+        run: black . && ruff check . --fix
+      - name: Debug formatting diff
+        run: |
+          git status --short
+          git diff --unified=0
       - name: Create Pull Request if changes
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "chore(format): apply Black formatting"
-          title: "chore(format): apply Black formatting"
-          body: "This PR applies Black formatting automatically."
+          commit-message: "chore(format): apply Black & Ruff auto-fixes"
           branch: ci/auto-format
-          delete-branch: true
+          title: "chore(format): auto-format code (Black/Ruff)"
+          body: "Este PR aplica formato automático. Si no ves PR, probablemente no había cambios de estilo pendientes."
+          labels: ci

@@ -59,8 +59,16 @@ docker-compose exec web pytest -q
 
 ### Tests locales
 
-En local, los tests usan Celery en modo *eager*, con un backend en memoria, por lo que no es necesario tener Redis en ejecución.
-Para forzar el uso de un Redis real exporta `CELERY_TASK_ALWAYS_EAGER=0`, levanta un servidor Redis y ejecuta los tests de nuevo.
+En local, los tests ejecutan Celery en modo *eager* con broker y backend en memoria, por lo que no es necesario tener Redis en ejecución.
+
+Para correrlos contra un Redis real exporta `CELERY_TASK_ALWAYS_EAGER=0`, levanta un contenedor Redis y vuelve a lanzar `pytest`.
+
+```bash
+CELERY_TASK_ALWAYS_EAGER=0 docker run -d -p 6379:6379 redis
+pytest -q
+```
+
+Los tests ubicados en `tests/ai_jobs` se saltan automáticamente cuando Celery está en modo *eager*, ya que dependen de un broker real.
 
 ## Formateo automático
 
@@ -76,8 +84,8 @@ Para ejecutar todos los chequeos manualmente:
 pre-commit run --all-files
 ```
 
-En GitHub, un workflow aplica Black y crea PRs automáticos si detecta cambios de estilo.
-Si no se crea un PR, probablemente no había nada que formatear.
+En GitHub, un workflow aplica Black y Ruff y crea PRs automáticos si detecta cambios de estilo.
+Si no aparece un PR, es porque no había diferencias de formato que aplicar.
 
 ## Arquitectura IA
 

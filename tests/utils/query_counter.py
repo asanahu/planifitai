@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 

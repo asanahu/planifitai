@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.ai.provider import OpenAIProvider
 from app.ai import embeddings
+from app.ai.provider import OpenAIProvider
 from app.ai.schemas import ChatMessage, ChatRequest
 
 
