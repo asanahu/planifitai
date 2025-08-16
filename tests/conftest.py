@@ -82,4 +82,4 @@ def tokens(test_client: TestClient):
         "/api/v1/auth/login",
         data={"username": "user@example.com", "password": "string"},
     )
-    return login_resp.json()
+    return login_resp.json()["data"]
