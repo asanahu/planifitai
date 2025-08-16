@@ -13,6 +13,12 @@ def make_celery() -> Celery:
         backend=backend,
         include=["app.background.tasks"],
     )
+    if os.getenv("CELERY_TASK_ALWAYS_EAGER") == "1":
+        app.conf.update(
+            task_always_eager=True,
+            task_eager_propagates=True,
+            result_backend="cache+memory://",
+        )
     app.conf.update(
         task_serializer="json",
         result_serializer="json",

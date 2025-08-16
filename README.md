@@ -57,6 +57,11 @@ Tests are written using Pytest and can be run inside the `web` container:
 docker-compose exec web pytest -q
 ```
 
+### Tests locales
+
+En local, los tests usan Celery en modo *eager*, con un backend en memoria, por lo que no es necesario tener Redis en ejecución.
+Para forzar el uso de un Redis real exporta `CELERY_TASK_ALWAYS_EAGER=0`, levanta un servidor Redis y ejecuta los tests de nuevo.
+
 ## Formateo automático
 
 Instala y configura los hooks locales:
@@ -70,6 +75,9 @@ Para ejecutar todos los chequeos manualmente:
 ```bash
 pre-commit run --all-files
 ```
+
+En GitHub, un workflow aplica Black y crea PRs automáticos si detecta cambios de estilo.
+Si no se crea un PR, probablemente no había nada que formatear.
 
 ## Arquitectura IA
 
