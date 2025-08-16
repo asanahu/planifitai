@@ -9,12 +9,16 @@ SAFE_ALTERNATIVES = {
     "salto": "sentadilla sin salto",
     "jump": "sentadilla sin salto",
     "jumping": "sentadilla sin salto",
-    "plyo": "zancadas estáticas"
+    "plyo": "zancadas estáticas",
 }
+
 
 def validate_frequency(freq: int) -> None:
     if not (2 <= freq <= 6):
-        raise ValueError("PLAN_INVALID_FREQ: Frecuencia fuera de rango (usa 2 a 6 días).")
+        raise ValueError(
+            "PLAN_INVALID_FREQ: Frecuencia fuera de rango (usa 2 a 6 días)."
+        )
+
 
 def apply_restrictions(plan_dict: dict, restrictions: list[str]) -> dict:
     """
@@ -43,7 +47,10 @@ def apply_restrictions(plan_dict: dict, restrictions: list[str]) -> dict:
         day["exercises"] = cleaned
     return plan
 
-def ensure_structure(objective_key: str, base_template: dict, requested_freq: int) -> dict:
+
+def ensure_structure(
+    objective_key: str, base_template: dict, requested_freq: int
+) -> dict:
     """
     Ajusta la plantilla si el usuario pide más/menos días:
     - Si pide menos: recorta.

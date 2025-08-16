@@ -7,7 +7,9 @@ from app.services import rules_engine
 _TEMPLATES_PATH = Path(__file__).resolve().parent.parent / "models" / "templates.json"
 
 
-def generate_plan(objective: str, frequency: int, restrictions: List[str] | None = None) -> dict:
+def generate_plan(
+    objective: str, frequency: int, restrictions: List[str] | None = None
+) -> dict:
     """Genera un plan de entrenamiento a partir de las plantillas."""
     rules_engine.validate_frequency(frequency)
 
