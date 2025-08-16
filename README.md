@@ -106,6 +106,40 @@ The API documentation is available at:
 *   **Swagger UI:** `/api/v1/docs`
 *   **ReDoc:** `/api/v1/redoc`
 
+## Estándar de Respuestas y Errores
+
+Todas las respuestas utilizan un sobre homogéneo:
+
+`OK` → `{ "ok": true, "data": { ... } }`
+
+`ERROR` → `{ "ok": false, "error": { "code": "PLAN_NOT_FOUND", "message": "Plan no encontrado" } }`
+
+| Código | HTTP |
+| --- | --- |
+| AUTH_INVALID_CREDENTIALS | 401 |
+| AUTH_FORBIDDEN | 403 |
+| PLAN_NOT_FOUND | 404 |
+| PLAN_INVALID_STATE | 400 |
+| NUTRI_MEAL_NOT_FOUND | 404 |
+| COMMON_VALIDATION | 422 |
+| COMMON_INTEGRITY | 409 |
+| COMMON_HTTP | 4xx |
+| COMMON_UNEXPECTED | 500 |
+
+Ejemplos:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -d 'username=user@example.com&password=string'
+# → {"ok": true, "data": {"access_token": "..."}}
+
+curl -X GET http://localhost:8000/api/v1/routines/999 \
+  -H "Authorization: Bearer TOKEN"
+# → {"ok": false, "error": {"code": "PLAN_NOT_FOUND", "message": "Plan no encontrado"}}
+```
+
+La variable de entorno `API_ENVELOPE_COMPAT` permite habilitar un modo de compatibilidad temporal para clientes legacy.
+
 ## Health Check
 
 You can check the health of the API at:
