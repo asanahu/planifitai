@@ -57,6 +57,20 @@ Tests are written using Pytest and can be run inside the `web` container:
 docker-compose exec web pytest -q
 ```
 
+## Formateo automático
+
+Instala y configura los hooks locales:
+
+```bash
+pip install pre-commit && pre-commit install
+```
+
+Para ejecutar todos los chequeos manualmente:
+
+```bash
+pre-commit run --all-files
+```
+
 ## Arquitectura IA
 
 El monolito puede delegar las operaciones de IA a un microservicio FastAPI
