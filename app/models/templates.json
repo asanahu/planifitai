@@ -1,0 +1,27 @@
+{
+  "strength_2days": {
+    "days": 2,
+    "structure": [
+      { "day": 1, "exercises": ["sentadillas", "flexiones", "plancha"] },
+      { "day": 2, "exercises": ["zancadas", "remo invertido", "puente de glúteo"] }
+    ]
+  },
+  "strength_3days": {
+    "days": 3,
+    "structure": [
+      { "day": 1, "exercises": ["sentadillas", "flexiones", "plancha"] },
+      { "day": 2, "exercises": ["zancadas", "fondos en silla", "superman"] },
+      { "day": 3, "exercises": ["peso muerto rumano sin material", "remo invertido", "bird-dog"] }
+    ]
+  },
+  "strength_4days": {
+    "days": 4,
+    "structure": [
+      { "day": 1, "exercises": ["sentadillas", "flexiones", "plancha lateral"] },
+      { "day": 2, "exercises": ["zancadas", "remo invertido", "hollow hold"] },
+      { "day": 3, "exercises": ["hip thrust a una pierna", "flexiones diamante", "good morning"] },
+      { "day": 4, "exercises": ["sentadilla isométrica", "pike push-up", "dead bug"] }
+    ]
+  }
+}
+
