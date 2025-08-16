@@ -231,3 +231,34 @@ detect-secrets audit .secrets.baseline
 
 - Migrado de `python-jose` a `PyJWT` (algoritmo HS256) para eliminar la dependencia transitiva de `ecdsa` (GHSA-wj6h-64fc-37mp / CVE-2024-23342).
 - 
+
+## Estándar de Respuestas y Errores
+
+Formato común de todas las respuestas:
+
+```json
+{ "ok": true, "data": { ... } }
+{ "ok": false, "error": { "code": "PLAN_NOT_FOUND", "message": "Plan no encontrado" } }
+```
+
+### Códigos principales
+
+| Código | HTTP |
+| --- | --- |
+| AUTH_INVALID_CREDENTIALS | 401 |
+| AUTH_FORBIDDEN | 403 |
+| PLAN_NOT_FOUND | 404 |
+| PLAN_INVALID_STATE | 400 |
+| NUTRI_MEAL_NOT_FOUND | 404 |
+| COMMON_VALIDATION | 422 |
+| COMMON_INTEGRITY | 409 |
+| COMMON_HTTP | 4xx |
+| COMMON_UNEXPECTED | 500 |
+
+### Ejemplos
+
+```bash
+curl -X POST /api/v1/auth/login -d 'username=a@b.com&password=secret'
+
+curl -X GET /api/v1/routines/999
+```

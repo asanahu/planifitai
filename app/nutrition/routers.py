@@ -1,11 +1,12 @@
 from datetime import date
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext, get_current_user
 from app.core.database import get_db
+from app.core.errors import COMMON_HTTP, err, ok
 from app.dependencies import get_owned_meal
 from app.user_profile.models import UserProfile
 
@@ -23,11 +24,13 @@ def create_meal(
     current_user: UserContext = Depends(get_current_user),
 ):
     if payload.date > date.today():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Future date not allowed"
+        return err(
+            COMMON_HTTP,
+            "Future date not allowed",
+            status.HTTP_400_BAD_REQUEST,
         )
     meal = crud.create_meal(db, current_user.id, payload)
-    return schemas.MealRead.model_validate(meal)
+    return ok(schemas.MealRead.model_validate(meal), status.HTTP_201_CREATED)
 
 
 @router.get("/", response_model=schemas.DayLogRead)
@@ -37,7 +40,7 @@ def get_day(
     current_user: UserContext = Depends(get_current_user),
 ):
     day_log = services.get_day_log(db, current_user.id, date)
-    return day_log
+    return ok(day_log)
 
 
 @router.patch("/meal/{meal_id}", response_model=schemas.MealRead)
@@ -47,7 +50,7 @@ def update_meal(
     db: Session = Depends(get_db),
 ):
     meal = crud.update_meal(db, meal.user_id, meal.id, payload)
-    return schemas.MealRead.model_validate(meal)
+    return ok(schemas.MealRead.model_validate(meal))
 
 
 @router.delete("/meal/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -55,7 +58,7 @@ def delete_meal(
     meal: models.NutritionMeal = Depends(get_owned_meal), db: Session = Depends(get_db)
 ):
     crud.delete_meal(db, meal.user_id, meal.id)
-    return
+    return ok(None, status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
@@ -69,7 +72,7 @@ def add_item(
     db: Session = Depends(get_db),
 ):
     item = crud.add_meal_item(db, meal.user_id, meal.id, payload)
-    return schemas.MealItemRead.model_validate(item)
+    return ok(schemas.MealItemRead.model_validate(item), status.HTTP_201_CREATED)
 
 
 @router.patch("/meal/{meal_id}/items/{item_id}", response_model=schemas.MealItemRead)
@@ -80,7 +83,7 @@ def update_item(
     db: Session = Depends(get_db),
 ):
     item = crud.update_meal_item(db, meal.user_id, meal.id, item_id, payload)
-    return schemas.MealItemRead.model_validate(item)
+    return ok(schemas.MealItemRead.model_validate(item))
 
 
 @router.delete(
@@ -92,7 +95,7 @@ def delete_item(
     db: Session = Depends(get_db),
 ):
     crud.delete_meal_item(db, meal.user_id, meal.id, item_id)
-    return
+    return ok(None, status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
@@ -104,7 +107,7 @@ def create_water_log(
     current_user: UserContext = Depends(get_current_user),
 ):
     log = crud.create_water_log(db, current_user.id, payload)
-    return schemas.WaterLogRead.model_validate(log)
+    return ok(schemas.WaterLogRead.model_validate(log), status.HTTP_201_CREATED)
 
 
 @router.get("/water")
@@ -115,10 +118,12 @@ def get_water_logs(
 ):
     logs = crud.list_water_logs(db, current_user.id, date)
     total = sum(log.volume_ml for log in logs)
-    return {
-        "total_ml": total,
-        "logs": [schemas.WaterLogRead.model_validate(log) for log in logs],
-    }
+    return ok(
+        {
+            "total_ml": total,
+            "logs": [schemas.WaterLogRead.model_validate(log) for log in logs],
+        }
+    )
 
 
 @router.get("/targets", response_model=schemas.TargetsRead)
@@ -128,7 +133,7 @@ def get_targets(
     current_user: UserContext = Depends(get_current_user),
 ):
     target = services.get_or_create_target(db, current_user.id, date)
-    return schemas.TargetsRead.model_validate(target)
+    return ok(schemas.TargetsRead.model_validate(target))
 
 
 @router.post("/targets/custom", response_model=schemas.TargetsRead)
@@ -141,7 +146,7 @@ def set_custom_targets(
     target = crud.upsert_target(
         db, current_user.id, payload.date, data, models.TargetSource.custom
     )
-    return schemas.TargetsRead.model_validate(target)
+    return ok(schemas.TargetsRead.model_validate(target))
 
 
 @router.post("/targets/auto/recompute", response_model=schemas.TargetsRead)
@@ -152,15 +157,16 @@ def recompute_targets(
 ):
     profile = db.query(UserProfile).filter_by(user_id=current_user.id).first()
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Profile required for targets",
+        return err(
+            COMMON_HTTP,
+            "Profile required for targets",
+            status.HTTP_400_BAD_REQUEST,
         )
     data = services.compute_auto_targets(profile)
     target = crud.upsert_target(
         db, current_user.id, date, data, models.TargetSource.auto
     )
-    return schemas.TargetsRead.model_validate(target)
+    return ok(schemas.TargetsRead.model_validate(target))
 
 
 @router.get("/summary", response_model=schemas.SummaryRead)
@@ -170,7 +176,7 @@ def summary(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return services.get_summary(db, current_user.id, start, end)
+    return ok(services.get_summary(db, current_user.id, start, end))
 
 
 @router.post("/schedule-reminders")
@@ -179,7 +185,7 @@ def schedule_reminders(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return services.schedule_reminders(db, current_user.id, times or {})
+    return ok(services.schedule_reminders(db, current_user.id, times or {}))
 
 
 @router.post("/post-daily-summary")
@@ -188,4 +194,4 @@ def post_daily_summary(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return services.post_daily_summary(db, current_user.id, date)
+    return ok(services.post_daily_summary(db, current_user.id, date))
