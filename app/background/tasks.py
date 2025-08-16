@@ -26,9 +26,7 @@ def _maybe_callback(url: str | None, data: dict) -> None:
     ts = str(int(time.time()))
     body = json.dumps(data, separators=(",", ":")).encode()
     secret = (
-        os.getenv("CELERY_WEBHOOK_SECRET")
-        or os.getenv("AI_INTERNAL_SECRET")
-        or ""
+        os.getenv("CELERY_WEBHOOK_SECRET") or os.getenv("AI_INTERNAL_SECRET") or ""
     ).encode()
     sig = _sign(secret, ts, body) if secret else ""
     headers = {

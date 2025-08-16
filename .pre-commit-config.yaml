@@ -1,20 +1,31 @@
 repos:
--   repo: https://github.com/Yelp/detect-secrets
+  - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
-    -   id: detect-secrets
+      - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
         exclude: .secrets.baseline
 
--   repo: https://github.com/zricethezav/gitleaks
+  - repo: https://github.com/zricethezav/gitleaks
     rev: v8.28.0
     hooks:
-    -   id: gitleaks
+      - id: gitleaks
         args: ["protect", "--staged", "--redact", "--config=.gitleaks.toml", "--no-banner"]
 
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-    -   id: detect-aws-credentials
+      - id: detect-aws-credentials
         args: [--allow-missing-credentials]
-    -   id: detect-private-key
+      - id: detect-private-key
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: [--fix]
