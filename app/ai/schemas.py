@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional, Literal, Dict
-from pydantic import BaseModel
+from typing import Dict, List, Literal, Optional
 
+from pydantic import BaseModel
 
 # --- Workout plan -----------------------------------------------------------
 

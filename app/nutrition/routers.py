@@ -4,12 +4,12 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.auth.deps import UserContext, get_current_user
-from app.user_profile.models import UserProfile
+from app.core.database import get_db
 from app.dependencies import get_owned_meal
+from app.user_profile.models import UserProfile
 
-from . import schemas, services, crud, models
+from . import crud, models, schemas, services
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
@@ -114,10 +114,10 @@ def get_water_logs(
     current_user: UserContext = Depends(get_current_user),
 ):
     logs = crud.list_water_logs(db, current_user.id, date)
-    total = sum(l.volume_ml for l in logs)
+    total = sum(log.volume_ml for log in logs)
     return {
         "total_ml": total,
-        "logs": [schemas.WaterLogRead.model_validate(l) for l in logs],
+        "logs": [schemas.WaterLogRead.model_validate(log) for log in logs],
     }
 
 

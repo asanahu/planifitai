@@ -1,4 +1,5 @@
-from sqlalchemy.types import TypeDecorator, LargeBinary
+from sqlalchemy.types import LargeBinary, TypeDecorator
+
 from app.security.crypto import get_crypto_provider
 
 

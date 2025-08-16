@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from typing import List
-
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.ai_client import get_ai_client
 from app.auth.deps import UserContext
 
-from . import schemas
 from . import embeddings as emb
-from app.ai_client import get_ai_client
-
+from . import schemas
 
 # ---------------------------------------------------------------------------
 # Generators

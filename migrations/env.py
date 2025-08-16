@@ -1,15 +1,15 @@
 from logging.config import fileConfig
+
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.core.config import settings
-from app.core.database import Base
-
 # IMPORTS para registrar modelos en el MetaData:
 from app.auth import models as auth_models  # noqa: F401
-from app.user_profile import models as profile_models  # noqa: F401
-from app.progress import models as progress_models  # noqa: F401
+from app.core.config import settings
+from app.core.database import Base
 from app.notifications import models as notifications_models  # noqa: F401
+from app.progress import models as progress_models  # noqa: F401
+from app.user_profile import models as profile_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

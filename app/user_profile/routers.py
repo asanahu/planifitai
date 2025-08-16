@@ -1,10 +1,11 @@
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.auth.deps import UserContext, get_current_user
-from app.user_profile import services, schemas
+from app.core.database import get_db
+from app.user_profile import schemas, services
 
 logger = logging.getLogger(__name__)
 

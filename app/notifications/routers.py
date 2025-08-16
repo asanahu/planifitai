@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.auth.deps import UserContext, get_current_user
+from app.core.database import get_db
 
-from . import models, schemas, crud, services, tasks
+from . import crud, models, schemas, services, tasks
 
 # ensure models imported
 

@@ -1,16 +1,17 @@
 # app/main.py
 import logging
+
 from fastapi import FastAPI
 
-from app.core.config import settings
+from app.ai.routers import router as ai_router
 from app.auth.routers import router as auth_router
-from app.user_profile.routers import router as profile_router
-from app.routines.routers import router as routines_router
-from app.progress.routers import router as progress_router
+from app.core.config import settings
 from app.notifications.routers import router as notifications_router
 from app.nutrition.routers import router as nutrition_router
-from app.ai.routers import router as ai_router
+from app.progress.routers import router as progress_router
 from app.routers.ai_jobs import router as ai_jobs_router
+from app.routines.routers import router as routines_router
+from app.user_profile.routers import router as profile_router
 
 logging.basicConfig(level=logging.INFO)
 

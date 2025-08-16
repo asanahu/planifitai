@@ -3,11 +3,10 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
-from app.core.database import get_db
 from app.auth import services
 from app.auth.models import User
-
+from app.core.config import settings
+from app.core.database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 

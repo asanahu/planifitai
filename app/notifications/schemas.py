@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime, time
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
 
-from .models import NotificationCategory, NotificationType, NotificationStatus
+from pydantic import BaseModel
+
+from .models import NotificationCategory, NotificationStatus, NotificationType
 
 
 class NotificationPreferencesBase(BaseModel):

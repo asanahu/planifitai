@@ -1,7 +1,6 @@
 """add fk indexes"""
 
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "b8d9e0f1a2c3"

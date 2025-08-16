@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum
-from sqlalchemy.orm import relationship
-from app.core.database import Base
 import enum
+
+from sqlalchemy import Column, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
+
+from app.core.database import Base
 from app.security.types import EncryptedFloat, EncryptedString
 
 

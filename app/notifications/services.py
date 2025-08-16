@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, date, time, timedelta
-from zoneinfo import ZoneInfo
+from datetime import date, datetime, time, timedelta
 from typing import Dict
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
-from . import models, schemas, crud
+from . import crud, models, schemas
 
 DEFAULT_TZ = "Europe/Madrid"
 

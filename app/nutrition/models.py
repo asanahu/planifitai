@@ -1,18 +1,21 @@
 import enum
 from datetime import datetime
+
 from sqlalchemy import (
+    JSON,
+    CheckConstraint,
     Column,
     Date,
     DateTime,
-    Enum as SqlEnum,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
-    JSON,
     UniqueConstraint,
-    Index,
-    CheckConstraint,
+)
+from sqlalchemy import (
+    Enum as SqlEnum,
 )
 from sqlalchemy.orm import relationship
 

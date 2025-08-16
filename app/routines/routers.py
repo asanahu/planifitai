@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from typing import List
 
-from . import services, schemas, models
-from app.progress import schemas as progress_schemas
-from app.core.database import get_db
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+
 from app.auth.deps import UserContext, get_current_user
+from app.core.database import get_db
 from app.dependencies import get_owned_routine
+from app.progress import schemas as progress_schemas
+
+from . import models, schemas, services
 
 router = APIRouter(prefix="/routines", tags=["routines"])
 

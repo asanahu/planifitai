@@ -1,10 +1,13 @@
 from datetime import datetime
-from sqlalchemy.orm import Session, selectinload
-from . import models, schemas
-from app.auth.deps import UserContext
+
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session, selectinload
+
+from app.auth.deps import UserContext
 from app.notifications.tasks import schedule_routine
 from app.progress import models as progress_models
+
+from . import models, schemas
 
 
 def get_routine(db: Session, routine_id: int, user: UserContext):
@@ -13,7 +16,7 @@ def get_routine(db: Session, routine_id: int, user: UserContext):
         .options(
             selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
         )
-        .filter(models.Routine.id == routine_id, models.Routine.deleted_at == None)
+        .filter(models.Routine.id == routine_id, models.Routine.deleted_at.is_(None))
         .first()
     )
     if not routine:
@@ -33,7 +36,7 @@ def get_routines_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 
         .options(
             selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
         )
-        .filter(models.Routine.owner_id == user_id, models.Routine.deleted_at == None)
+        .filter(models.Routine.owner_id == user_id, models.Routine.deleted_at.is_(None))
         .offset(skip)
         .limit(limit)
         .all()
@@ -47,9 +50,9 @@ def get_public_templates(db: Session, skip: int = 0, limit: int = 20):
             selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
         )
         .filter(
-            models.Routine.is_template == True,
-            models.Routine.is_public == True,
-            models.Routine.deleted_at == None,
+            models.Routine.is_template,
+            models.Routine.is_public,
+            models.Routine.deleted_at.is_(None),
         )
         .offset(skip)
         .limit(limit)
@@ -64,7 +67,7 @@ def create_routine(db: Session, routine: schemas.RoutineCreate, user: UserContex
         .filter(
             models.Routine.owner_id == user.id,
             models.Routine.name == routine.name,
-            models.Routine.deleted_at == None,
+            models.Routine.deleted_at.is_(None),
         )
         .first()
     )
@@ -154,7 +157,7 @@ def clone_template(db: Session, template_id: int, user: UserContext):
         .options(
             selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
         )
-        .filter(models.Routine.id == template_id, models.Routine.is_template == True)
+        .filter(models.Routine.id == template_id, models.Routine.is_template)
         .first()
     )
     if not template:
@@ -348,7 +351,8 @@ def complete_exercise(
         .join(models.RoutineDay)
         .join(models.Routine)
         .filter(
-            models.RoutineExercise.id == exercise_id, models.Routine.deleted_at == None
+            models.RoutineExercise.id == exercise_id,
+            models.Routine.deleted_at.is_(None),
         )
         .first()
     )

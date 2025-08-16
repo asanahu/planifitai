@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
 import math
+from typing import Any, Dict, List
 
-from sqlalchemy import Column, Integer, String, JSON, Index
+from sqlalchemy import JSON, Column, Index, Integer, String
 from sqlalchemy.orm import Session
 
 from app.core.database import Base

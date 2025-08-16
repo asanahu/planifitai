@@ -1,5 +1,6 @@
 from datetime import date
 from typing import List
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from .models import MetricEnum

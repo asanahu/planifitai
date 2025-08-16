@@ -6,7 +6,7 @@ import time
 import uuid
 
 from fastapi import FastAPI, Request
-from prometheus_client import Histogram, generate_latest, CollectorRegistry
+from prometheus_client import CollectorRegistry, Histogram, generate_latest
 from starlette.responses import PlainTextResponse
 
 from .provider import OpenAIProvider

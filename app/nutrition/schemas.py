@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional, Dict
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from typing import Dict, List
 
-from .models import MealType, ServingUnit, WaterSource, TargetSource
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .models import MealType, ServingUnit, TargetSource, WaterSource
 
 
 class MealItemBase(BaseModel):
