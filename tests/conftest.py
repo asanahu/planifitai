@@ -17,6 +17,11 @@ from app.core.database import Base, get_db, engine
 from app.main import app
 from fastapi.testclient import TestClient
 
+
+def pytest_sessionstart(session):
+    os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "1")
+
+
 TestingSessionLocal = sessionmaker(
     autocommit=False, autoflush=False, bind=engine, expire_on_commit=False, future=True
 )
