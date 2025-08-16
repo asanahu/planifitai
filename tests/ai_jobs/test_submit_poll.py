@@ -17,7 +17,6 @@ def test_chat_submit_and_poll():
     )
     assert res.status_code == 202
     data = res.json()
-    tid = data["task_id"]
     res2 = client.get(data["status_url"])
     assert res2.status_code == 200
     body = res2.json()

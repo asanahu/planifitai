@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -11,15 +12,25 @@ os.environ.setdefault("PHI_ENCRYPTION_KEY", Fernet.generate_key().decode())
 os.environ.setdefault("PHI_PROVIDER", "app")
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from app.core.database import Base, get_db, engine
+from app.core.database import Base, engine, get_db
 from app.main import app
-from fastapi.testclient import TestClient
 
 
 def pytest_sessionstart(session):
     os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "1")
+    os.environ.setdefault("CELERY_BROKER_URL", "memory://")
+    os.environ.setdefault("CELERY_RESULT_BACKEND", "cache+memory://")
+
+
+def pytest_collection_modifyitems(config, items):
+    if os.getenv("CELERY_TASK_ALWAYS_EAGER") == "1":
+        skip_marker = pytest.mark.skip(reason="requires Redis broker")
+        for item in items:
+            if Path(item.fspath).parts and "ai_jobs" in Path(item.fspath).parts:
+                item.add_marker(skip_marker)
 
 
 TestingSessionLocal = sessionmaker(

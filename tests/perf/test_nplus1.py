@@ -1,9 +1,10 @@
-import pytest
 from datetime import date
 
-from tests.utils.query_counter import count_queries
+import pytest
+
 from app.core.database import engine
 from app.user_profile.models import ActivityLevel, Goal
+from tests.utils.query_counter import count_queries
 
 
 def auth_headers(tokens):

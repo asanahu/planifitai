@@ -2,7 +2,7 @@ import datetime as dt
 
 import pytest
 
-from app.notifications import models, crud, schemas, tasks
+from app.notifications import crud, models, schemas, tasks
 
 
 @pytest.fixture

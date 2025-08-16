@@ -1,13 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-
-from app.main import app
-from app.core.database import get_db, Base
-from app.auth.models import User
-from app.routines import schemas
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.auth.models import User
+from app.core.database import Base, get_db
+from app.main import app
+from app.routines import schemas
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
@@ -169,7 +168,7 @@ def test_delete_routine(test_client: TestClient, auth_headers: dict):
 
 
 def test_clone_template(test_client: TestClient, auth_headers: dict):
-    # First, create a public template (as an admin or with a special flag, for now we'll just create it)
+    # First, create a public template (normally an admin or special flag is required)
     template_data = {
         "name": "Public Template",
         "description": "A template for all to use",

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import hmac
 import hashlib
+import hmac
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer

@@ -1,12 +1,14 @@
 from datetime import date
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.main import app
-from app.auth import models as auth_models, services as auth_services
+from app.auth import models as auth_models
+from app.auth import services as auth_services
 from app.auth.deps import UserContext, get_current_user
-from app.routines import models as routine_models
 from app.dependencies import get_owned_routine
+from app.main import app
+from app.routines import models as routine_models
 
 
 def _override_user(user: auth_models.User):
