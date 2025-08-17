@@ -36,7 +36,7 @@ def login(
     if not user:
         return err(
             AUTH_INVALID_CREDENTIALS,
-            "Incorrect email or password",
+            "Credenciales inválidas",
             status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -62,7 +62,7 @@ def refresh_token(
     if not payload or payload.get("token_type") != "refresh":
         return err(
             AUTH_INVALID_CREDENTIALS,
-            "Invalid refresh token",
+            "Credenciales inválidas",
             status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -71,7 +71,7 @@ def refresh_token(
     if not user:
         return err(
             AUTH_INVALID_CREDENTIALS,
-            "Invalid refresh token",
+            "Credenciales inválidas",
             status.HTTP_401_UNAUTHORIZED,
         )
 
