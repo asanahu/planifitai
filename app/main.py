@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
     async def root():
         return ok({"message": "PlanifitAI API up"})
 
+    # Estos routers NO llevan /api/v1 por dentro → se incluye con prefix global
     app.include_router(auth_router, prefix=settings.API_V1_STR)
     app.include_router(profile_router, prefix=settings.API_V1_STR)
     app.include_router(routines_router, prefix=settings.API_V1_STR)
@@ -54,7 +55,12 @@ def create_app() -> FastAPI:
     app.include_router(nutrition_router, prefix=settings.API_V1_STR)
     app.include_router(notifications_router, prefix=settings.API_V1_STR)
     app.include_router(ai_router, prefix=settings.API_V1_STR)
-    app.include_router(training_router, prefix=settings.API_V1_STR)
+
+    # 🔴 Importante: training_router ya tiene prefix="/api/v1/training"
+    # Por eso se incluye SIN prefix extra para evitar /api/v1/api/v1/training
+    app.include_router(training_router)
+
+    # (Este router ya gestiona sus propias rutas)
     app.include_router(ai_jobs_router)
 
     ERROR_MAP = {

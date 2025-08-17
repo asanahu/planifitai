@@ -5,6 +5,7 @@ from typing import List
 from app.services import rules_engine
 from app.training.ai_generator import refine_with_ai
 from app.training.schemas import Block, DayPlan, Exercise, Level, PlanDTO
+from app.services.rules_engine import select_template
 
 _TEMPLATES_PATH = Path(__file__).resolve().parent.parent / "models" / "templates.json"
 
@@ -43,8 +44,9 @@ def generate_plan_v2(
     with _TEMPLATES_PATH.open(encoding="utf-8") as fh:
         json.load(fh)
 
-    tpl = rules_engine.select_template(objective, frequency)
+    tpl = select_template(objective, frequency)
     if tpl is None:
+        # subir un KeyError claro para que el router lo capture
         raise KeyError("PLAN_NOT_FOUND")
 
     base = rules_engine.ensure_structure(objective, tpl, frequency)

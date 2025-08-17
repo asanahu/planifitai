@@ -2,9 +2,22 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import jwt
-from jwt import PyJWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+
+# Shim robusto para excepciones de PyJWT en distintas versiones/implementaciones
+try:
+    # Algunas versiones exponen PyJWTError en el paquete raíz
+    from jwt import PyJWTError  # type: ignore[attr-defined]
+except Exception:  # pragma: no cover
+    try:
+        # Otras lo exponen en jwt.exceptions
+        from jwt.exceptions import PyJWTError  # type: ignore[attr-defined]
+    except Exception:  # pragma: no cover
+        # Fallback máximo: define una excepción local con el mismo nombre
+        class PyJWTError(Exception):  # type: ignore[no-redef]
+            pass
+
 
 from app.auth.models import User
 from app.core.config import settings
@@ -41,8 +54,9 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
 
 def create_token(data: dict, expires_delta: timedelta) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
+    now = datetime.now(timezone.utc)
+    expire = now + expires_delta
+    to_encode.update({"exp": expire, "iat": now})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -59,7 +73,9 @@ def create_refresh_token(data: dict) -> str:
 def decode_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
         )
         return payload
     except PyJWTError:
