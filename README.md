@@ -106,6 +106,49 @@ The API documentation is available at:
 *   **Swagger UI:** `/api/v1/docs`
 *   **ReDoc:** `/api/v1/redoc`
 
+## POST /api/v1/training/generate
+
+Genera un plan de entrenamiento a partir de los siguientes campos:
+
+| Campo | Tipo | Notas |
+| --- | --- | --- |
+| `objective` | string | Objetivo principal (ej. `strength`). |
+| `frequency` | int | Días por semana (2-6). |
+| `level` | string | `beginner`, `intermediate` o `advanced` (def. `beginner`). |
+| `session_minutes` | int | Duración de cada sesión (def. `25`). |
+| `restrictions` | array[str] | Lesiones o limitaciones (opcional). |
+| `persist` | bool | Guarda el plan y devuelve `routine_id`. |
+| `use_ai` | bool | Refinar con IA (def. `false`). |
+
+### Respuesta OK
+
+```json
+{
+  "ok": true,
+  "data": {
+    "days": [ { "day": 1, "blocks": [] }, ... ],
+    "note": "IA pendiente"
+  }
+}
+```
+
+Si `persist=true` la respuesta incluye:
+
+```json
+{"ok": true, "data": {"routine_id": 123, "plan": { ... }}}
+```
+
+### Respuesta de Error
+
+```json
+{
+  "ok": false,
+  "error": { "code": "PLAN_INVALID_FREQ", "message": "Frecuencia fuera de rango (usa 2 a 6 días)." }
+}
+```
+
+> Compatibilidad: `data.note` y `day.exercises` se retirarán en la versión `v0.4`.
+
 ## Estándar de Respuestas y Errores
 
 Todas las respuestas utilizan un sobre homogéneo:

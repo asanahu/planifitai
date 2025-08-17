@@ -1,4 +1,7 @@
-from typing import Literal, List
+import logging
+from time import perf_counter
+from typing import List, Literal
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -7,6 +10,8 @@ from app.core.database import get_db
 from app.core.errors import PLAN_NOT_FOUND, err, ok
 from app.routines.models import Routine, RoutineDay, RoutineExercise
 from app.training.planner import generate_plan_v2
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/training", tags=["training"])
 
@@ -24,6 +29,7 @@ class GenerateTrainingIn(BaseModel):
 
 @router.post("/generate")
 def generate_training(payload: GenerateTrainingIn, db: Session = Depends(get_db)):
+    start = perf_counter()
     try:
         plan = generate_plan_v2(
             objective=payload.objective,
@@ -75,6 +81,7 @@ def generate_training(payload: GenerateTrainingIn, db: Session = Depends(get_db)
 
         # Vista v2 + compat v1 en la respuesta
         data = plan.model_dump()
+        # TODO(deprecate): compat v1 se retirará en v0.4
         # compat: nota en raíz
         if "note" not in data:
             note = data.get("meta", {}).get("note")
@@ -90,11 +97,23 @@ def generate_training(payload: GenerateTrainingIn, db: Session = Depends(get_db)
                             ex_names.append(name)
                 d["exercises"] = ex_names
 
+        duration_ms = int((perf_counter() - start) * 1000)
+        source = getattr(getattr(plan, "meta", None), "source", None)
+        logger.info(
+            "training.generate duration_ms=%d source=%s objective=%s frequency=%s level=%s use_ai=%s",
+            duration_ms,
+            source,
+            payload.objective,
+            payload.frequency,
+            payload.level,
+            payload.use_ai,
+        )
         return ok({"routine_id": routine.id, "plan": data})
 
     # --- Respuesta NO persistente: v2 + compat v1 ---
     data = plan.model_dump()
 
+    # TODO(deprecate): compat v1 se retirará en v0.4
     # compat: nota en raíz (los tests esperan "IA pendiente")
     if "note" not in data:
         note = data.get("meta", {}).get("note")
@@ -111,4 +130,15 @@ def generate_training(payload: GenerateTrainingIn, db: Session = Depends(get_db)
                         ex_names.append(name)
             d["exercises"] = ex_names
 
+    duration_ms = int((perf_counter() - start) * 1000)
+    source = getattr(getattr(plan, "meta", None), "source", None)
+    logger.info(
+        "training.generate duration_ms=%d source=%s objective=%s frequency=%s level=%s use_ai=%s",
+        duration_ms,
+        source,
+        payload.objective,
+        payload.frequency,
+        payload.level,
+        payload.use_ai,
+    )
     return ok(data)
