@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import List
 
 from app.services import rules_engine
+from app.services.rules_engine import select_template
 from app.training.ai_generator import refine_with_ai
 from app.training.schemas import Block, DayPlan, Exercise, Level, PlanDTO
-from app.services.rules_engine import select_template
 
 _TEMPLATES_PATH = Path(__file__).resolve().parent.parent / "models" / "templates.json"
 
