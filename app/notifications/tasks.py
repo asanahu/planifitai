@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import time
+from datetime import datetime, time
 from typing import Dict
+from zoneinfo import ZoneInfo
 
 from app.core.celery_utils import celery_app
 from app.core.database import SessionLocal
@@ -50,6 +51,47 @@ def schedule_nutrition_reminders_task(
     )
     logger.info("scheduled %s nutrition notifications", len(res))
     return len(res)
+
+
+@celery_app.task(name="notifications.schedule_weigh_in")
+def schedule_weigh_in_notifications_task(
+    user_id: int | str,
+    day_of_week: int,
+    local_time: str,
+    weeks_ahead: int,
+) -> dict:
+    db = SessionLocal()
+    try:
+        tz = services.get_user_timezone(db, user_id)
+        hour, minute = services.parse_local_time(local_time)
+        now_local = datetime.now(ZoneInfo(tz))
+        occ_local = services.upcoming_weekly_occurrences(
+            now_local, day_of_week, hour, minute, weeks_ahead
+        )
+        created_count, first_local = services.ensure_notifications(
+            db, user_id, tz, occ_local
+        )
+    finally:
+        db.close()
+    logger.info(
+        "schedule_weigh_in",
+        extra={
+            "event": "schedule_weigh_in",
+            "user_id": user_id,
+            "tz": tz,
+            "created": created_count,
+            "first_local": first_local.isoformat() if first_local else None,
+        },
+    )
+    return {
+        "scheduled_count": created_count,
+        "first_scheduled_local": (
+            first_local.replace(second=0, microsecond=0).isoformat()
+            if first_local
+            else None
+        ),
+        "timezone": tz,
+    }
 
 
 # Backwards compatible task names used by other modules

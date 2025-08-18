@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext, get_current_user
 from app.core.database import get_db
+from app.core.errors import ok
+from app.schemas.notifications import (
+    WeighInScheduleRequest,
+    WeighInScheduleResponse,
+)
 
 from . import crud, models, schemas, services, tasks
 
@@ -74,6 +79,21 @@ def schedule_nutrition(
         water_every_min=data.water_every_min,
     )
     return {"scheduled": True}
+
+
+@router.post("/schedule/weigh-in", response_model=WeighInScheduleResponse)
+def schedule_weigh_in_endpoint(
+    req: WeighInScheduleRequest,
+    current_user: UserContext = Depends(get_current_user),
+):
+    result = tasks.schedule_weigh_in_notifications_task.delay(
+        current_user.id,
+        req.day_of_week,
+        req.local_time,
+        req.weeks_ahead,
+    )
+    data = result.get() if hasattr(result, "get") else result
+    return ok(WeighInScheduleResponse(**data))
 
 
 @router.get("/", response_model=list[schemas.NotificationOut])
