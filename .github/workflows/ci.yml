@@ -61,7 +61,15 @@ jobs:
 
       # 5) Tests — BLOQUEANTE
       - name: Pytest
-        run: pytest -q tests/test_training_responses.py tests/test_training_v2.py tests/test_auth_responses.py tests/test_plan_responses.py tests/test_nutrition_responses.py
+        run: |
+          API_ENVELOPE_COMPAT=1 pytest -q \
+            tests/test_training_responses.py \
+            tests/test_training_v2.py \
+            tests/test_auth_responses.py \
+            tests/test_plan_responses.py \
+            tests/test_nutrition_responses.py \
+            tests/test_routine_detail_adherence.py \
+            tests/test_notifications_weigh_in.py
 
 
       # 6) Auditoría de dependencias — BLOQUEANTE
