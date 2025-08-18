@@ -3,6 +3,8 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.schemas.adherence import AdherenceResponse
+
 
 # Schemas for ExerciseCatalog
 class ExerciseCatalogBase(BaseModel):
@@ -102,6 +104,7 @@ class RoutineRead(RoutineBase):
     created_at: datetime
     updated_at: datetime
     days: List[RoutineDayRead] = []
+    adherence: Optional[AdherenceResponse] = None
 
     class Config:
         orm_mode = True
