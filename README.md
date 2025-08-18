@@ -226,6 +226,28 @@ curl -X POST http://localhost:8000/api/v1/progress \
   -d '{"date":"2025-08-13","metric":"weight","value":82.4,"unit":"kg"}'
 ```
 
+## Training Adherence
+
+Weekly adherence to a routine based on planned vs. completed workouts.
+
+* **Endpoint:** `GET /api/v1/routines/{id}/adherence?range=last_week`
+
+**Example cURL (OK):**
+
+```bash
+curl -H "Authorization: Bearer $ACCESS" \
+  http://localhost:8000/api/v1/routines/1/adherence?range=last_week
+```
+
+**Example cURL (Error):**
+
+```bash
+curl http://localhost:8000/api/v1/routines/999/adherence
+# 404 Routine not found
+```
+
+> This metric will also be exposed on `/routines/{id}` in v0.4.
+
 ## Roadmap
 
 Upcoming modules and their tentative scope:
