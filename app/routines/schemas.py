@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.adherence import AdherenceResponse
 
@@ -25,8 +25,7 @@ class ExerciseCatalogUpdate(ExerciseCatalogBase):
 class ExerciseCatalogRead(ExerciseCatalogBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Schemas for RoutineExercise
@@ -53,8 +52,7 @@ class RoutineExerciseRead(RoutineExerciseBase):
     id: int
     exercise_id: Optional[int] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Schemas for RoutineDay
@@ -75,8 +73,7 @@ class RoutineDayRead(RoutineDayBase):
     id: int
     exercises: List[RoutineExerciseRead] = []
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Schemas for Routine
@@ -106,8 +103,7 @@ class RoutineRead(RoutineBase):
     days: List[RoutineDayRead] = []
     adherence: Optional[AdherenceResponse] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Schemas for cloning a template

@@ -108,7 +108,7 @@ def read_routine(
         },
     )
 
-    routine_data = schemas.RoutineRead.from_orm(routine)
+    routine_data = schemas.RoutineRead.model_validate(routine)
     routine_data.adherence = adherence
     return ok(routine_data)
 
