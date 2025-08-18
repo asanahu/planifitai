@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, time, timedelta
 from typing import Dict
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import crud, models, schemas
@@ -140,3 +142,109 @@ def dispatch_notification(db: Session, notif_id: int) -> models.Notification | N
     db.commit()
     db.refresh(notif)
     return notif
+
+
+# --- Weigh-in helpers ---
+
+
+logger = logging.getLogger(__name__)
+
+
+def get_user_timezone(db: Session, user_id: int | str) -> str:
+    pref = crud.get_preferences(db, user_id)
+    return pref.tz if pref and pref.tz else DEFAULT_TZ
+
+
+def parse_local_time(t: str) -> tuple[int, int]:
+    hour, minute = map(int, t.split(":"))
+    if not (0 <= hour < 24 and 0 <= minute < 60):
+        raise ValueError("invalid time")
+    return hour, minute
+
+
+def upcoming_weekly_occurrences(
+    start_dt_local: datetime,
+    target_weekday: int,
+    hour: int,
+    minute: int,
+    weeks: int,
+) -> list[datetime]:
+    tz = start_dt_local.tzinfo
+    first_date = start_dt_local.date()
+    days_ahead = (target_weekday - start_dt_local.weekday()) % 7
+    first_date = first_date + timedelta(days=days_ahead)
+    first_dt = datetime.combine(first_date, time(hour, minute), tzinfo=tz)
+    if first_dt < start_dt_local:
+        first_dt = first_dt + timedelta(days=7)
+    occurrences = []
+    current = first_dt
+    for _ in range(weeks):
+        occurrences.append(current)
+        current = current + timedelta(days=7)
+    return occurrences
+
+
+def make_dedupe_key(user_id: int | str, local_date: date) -> str:
+    return f"weigh_in:{user_id}:{local_date.isoformat()}"
+
+
+def ensure_notifications(
+    db: Session,
+    user_id: int | str,
+    tz: str,
+    occurrences_local: list[datetime],
+) -> tuple[int, datetime | None]:
+    created = 0
+    first_local: datetime | None = None
+    pref = crud.get_preferences(db, user_id)
+    for dt_local in occurrences_local:
+        if pref and pref.quiet_hours_start_local and pref.quiet_hours_end_local:
+            start = datetime.combine(
+                dt_local.date(), pref.quiet_hours_start_local, tzinfo=ZoneInfo(tz)
+            )
+            end = datetime.combine(
+                dt_local.date(), pref.quiet_hours_end_local, tzinfo=ZoneInfo(tz)
+            )
+            if pref.quiet_hours_start_local < pref.quiet_hours_end_local:
+                in_quiet = start <= dt_local < end
+            else:
+                in_quiet = dt_local >= start or dt_local < end
+            if in_quiet:
+                new_dt = dt_local + timedelta(hours=1)
+                if new_dt.date() == dt_local.date():
+                    dt_local = new_dt
+                else:
+                    logger.info(
+                        "weigh_in within quiet hours", extra={"user_id": user_id}
+                    )
+
+        dedupe_key = make_dedupe_key(user_id, dt_local.date())
+        existing = db.execute(
+            select(models.Notification).where(
+                models.Notification.user_id == user_id,
+                models.Notification.dedupe_key == dedupe_key,
+                models.Notification.type == models.NotificationType.WEIGH_IN,
+                models.Notification.status == models.NotificationStatus.SCHEDULED,
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        scheduled_at = dt_local.astimezone(ZoneInfo("UTC"))
+        notif = schemas.NotificationCreate(
+            user_id=int(user_id),
+            category=models.NotificationCategory.PROGRESS,
+            type=models.NotificationType.WEIGH_IN,
+            title="Weigh-in Reminder",
+            body="Time to weigh yourself",
+            payload={
+                "local_iso": dt_local.replace(second=0, microsecond=0).isoformat(),
+                "tz": tz,
+            },
+            scheduled_at_utc=scheduled_at,
+            dedupe_key=dedupe_key,
+        )
+        crud.create_notification(db, notif)
+        created += 1
+        if not first_local:
+            first_local = dt_local
+    return created, first_local
