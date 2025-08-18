@@ -1,4 +1,5 @@
-from typing import List
+from datetime import date
+from typing import List, Literal
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -10,6 +11,8 @@ from app.core.errors import (
 )
 from app.dependencies import get_owned_routine
 from app.progress import schemas as progress_schemas
+from app.schemas import adherence as adherence_schemas
+from app.services import adherence as adherence_services
 
 from . import models, schemas, services
 
@@ -49,6 +52,23 @@ def read_public_templates(
 @router.get("/{routine_id}", response_model=schemas.RoutineRead)
 def read_routine(routine: models.Routine = Depends(get_owned_routine)):
     return ok(routine)
+
+
+@router.get(
+    "/{routine_id}/adherence", response_model=adherence_schemas.AdherenceResponse
+)
+def get_routine_adherence(
+    routine: models.Routine = Depends(get_owned_routine),
+    range: Literal["last_week", "this_week", "custom"] = "last_week",
+    tz: str = "Europe/Madrid",
+    start: date | None = None,
+    db: Session = Depends(get_db),
+):
+    return ok(
+        adherence_services.compute_weekly_workout_adherence(
+            db=db, routine_id=routine.id, start=start, range=range, tz=tz
+        )
+    )
 
 
 @router.put("/{routine_id}", response_model=schemas.RoutineRead)
