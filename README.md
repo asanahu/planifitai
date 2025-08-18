@@ -361,3 +361,102 @@ curl -X POST /api/v1/auth/login -d 'username=a@b.com&password=secret'
 
 curl -X GET /api/v1/routines/999
 ```
+
+### Adherencia de Entrenamiento (detalle de rutina)
+**Endpoint:** `GET /api/v1/routines/{id}`  
+**Parámetros de consulta:**
+- `week`: `this` | `last` | `custom` (por defecto: `this`)
+- `start`, `end`: `YYYY-MM-DD` (requeridos si `week=custom`)
+
+**Notas:**
+- Semana **Lunes–Domingo** en `Europe/Madrid`.
+- El campo `adherence` se calcula para el rango solicitado.
+
+**Ejemplo OK:**
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://<host>/api/v1/routines/123e4567-e89b-12d3-a456-426614174000?week=last"
+```
+```json
+{
+  "ok": true,
+  "data": {
+    "id": 123,
+    "name": "Summer Shred",
+    "adherence": {
+      "routine_id": 123,
+      "week_start": "2024-08-05",
+      "week_end": "2024-08-11",
+      "planned": 3,
+      "completed": 2,
+      "adherence_pct": 67,
+      "status": "fair"
+    }
+  }
+}
+```
+
+**Ejemplo Error (`week=custom` sin fechas):**
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://<host>/api/v1/routines/123?week=custom"
+```
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "COMMON_VALIDATION",
+    "message": "start and end required for custom week"
+  }
+}
+```
+
+### Programar Recordatorio de Peso (Weigh-In)
+**Endpoint:** `POST /api/v1/notifications/schedule/weigh-in`  
+**Cuerpo JSON:**
+```json
+{
+  "day_of_week": 6,
+  "local_time": "09:00",
+  "weeks_ahead": 8
+}
+```
+
+**Notas:**
+- Semana **Lunes–Domingo** en `Europe/Madrid`.
+- Programa recordatorios semanales de peso.
+
+**Ejemplo OK:**
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"day_of_week":6,"local_time":"09:00","weeks_ahead":8}' \
+  https://<host>/api/v1/notifications/schedule/weigh-in
+```
+```json
+{
+  "ok": true,
+  "data": {
+    "scheduled_count": 8,
+    "first_scheduled_local": "2024-08-19T09:00:00+02:00",
+    "timezone": "Europe/Madrid"
+  }
+}
+```
+
+**Ejemplo Error (`day_of_week` fuera de rango):**
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"day_of_week":7,"local_time":"09:00","weeks_ahead":8}' \
+  https://<host>/api/v1/notifications/schedule/weigh-in
+```
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "COMMON_VALIDATION",
+    "message": "day_of_week must be between 0 and 6"
+  }
+}
+```
