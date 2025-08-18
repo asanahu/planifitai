@@ -1,7 +1,9 @@
+import logging
+import time
 from datetime import date
 from typing import List, Literal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext, get_current_user
@@ -13,10 +15,12 @@ from app.dependencies import get_owned_routine
 from app.progress import schemas as progress_schemas
 from app.schemas import adherence as adherence_schemas
 from app.services import adherence as adherence_services
+from app.utils.datetimes import week_bounds
 
 from . import models, schemas, services
 
 router = APIRouter(prefix="/routines", tags=["routines"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=schemas.RoutineRead)
@@ -50,8 +54,63 @@ def read_public_templates(
 
 
 @router.get("/{routine_id}", response_model=schemas.RoutineRead)
-def read_routine(routine: models.Routine = Depends(get_owned_routine)):
-    return ok(routine)
+def read_routine(
+    routine: models.Routine = Depends(get_owned_routine),
+    week: Literal["this", "last", "custom"] = "this",
+    start: date | None = None,
+    end: date | None = None,
+    db: Session = Depends(get_db),
+):
+    tz = "Europe/Madrid"
+    start_date: date
+    end_date: date
+    if week == "this":
+        start_date, end_date = week_bounds("this_week", tz)
+    elif week == "last":
+        start_date, end_date = week_bounds("last_week", tz)
+    elif week == "custom":
+        if start is None or end is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="start and end required for custom week",
+            )
+        if start > end:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="start must be before or equal to end",
+            )
+        start_date, end_date = start, end
+    else:
+        start_date = end_date = date.today()  # pragma: no cover
+
+    start_ts = time.time()
+    if week == "custom":
+        adherence = adherence_services.compute_weekly_workout_adherence(
+            db=db, routine_id=routine.id, start=start_date, range="custom", tz=tz
+        )
+    else:
+        range_map = {"this": "this_week", "last": "last_week"}
+        adherence = adherence_services.compute_weekly_workout_adherence(
+            db=db, routine_id=routine.id, range=range_map[week], tz=tz
+        )
+    duration_ms = int((time.time() - start_ts) * 1000)
+    logger.info(
+        "routine_read",
+        extra={
+            "routine_id": routine.id,
+            "week": week,
+            "start": start_date.isoformat(),
+            "end": end_date.isoformat(),
+            "planned": adherence.planned,
+            "completed": adherence.completed,
+            "percentage": adherence.adherence_pct,
+            "duration_ms": duration_ms,
+        },
+    )
+
+    routine_data = schemas.RoutineRead.from_orm(routine)
+    routine_data.adherence = adherence
+    return ok(routine_data)
 
 
 @router.get(
