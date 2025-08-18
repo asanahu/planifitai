@@ -53,7 +53,57 @@ def read_public_templates(
     return ok(services.get_public_templates(db=db, skip=skip, limit=limit))
 
 
-@router.get("/{routine_id}", response_model=schemas.RoutineRead)
+@router.get(
+    "/{routine_id}",
+    response_model=schemas.RoutineRead,
+    summary="Retrieve routine details with adherence",
+    description=(
+        "Returns a routine and its adherence for the requested week. "
+        "`week` may be `this`, `last` or `custom` (default `this`).\n"
+        "When using `week=custom`, both `start` and `end` must be provided in"
+        " `YYYY-MM-DD` format. Weeks are Monday–Sunday in the `Europe/Madrid`"
+        " timezone."
+    ),
+    responses={
+        200: {
+            "description": "Routine with adherence data",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ok": True,
+                        "data": {
+                            "id": 123,
+                            "name": "Summer Shred",
+                            "adherence": {
+                                "routine_id": 123,
+                                "week_start": "2024-08-05",
+                                "week_end": "2024-08-11",
+                                "planned": 3,
+                                "completed": 2,
+                                "adherence_pct": 67,
+                                "status": "fair",
+                            },
+                        },
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ok": False,
+                        "error": {
+                            "code": "COMMON_VALIDATION",
+                            "message": "start and end required for custom week",
+                        },
+                    }
+                }
+            },
+        },
+    },
+)
 def read_routine(
     routine: models.Routine = Depends(get_owned_routine),
     week: Literal["this", "last", "custom"] = "this",

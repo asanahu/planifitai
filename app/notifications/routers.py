@@ -81,7 +81,48 @@ def schedule_nutrition(
     return {"scheduled": True}
 
 
-@router.post("/schedule/weigh-in", response_model=WeighInScheduleResponse)
+@router.post(
+    "/schedule/weigh-in",
+    response_model=WeighInScheduleResponse,
+    summary="Schedule weekly weigh-in notifications",
+    description=(
+        "Create weekly weigh-in reminders for the authenticated user. "
+        "`day_of_week` uses 0=Monday .. 6=Sunday. `local_time` is interpreted in"
+        " the user's timezone (default `Europe/Madrid`)."
+        " `weeks_ahead` defines how many upcoming reminders are created."
+    ),
+    responses={
+        200: {
+            "description": "Notifications scheduled",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ok": True,
+                        "data": {
+                            "scheduled_count": 8,
+                            "first_scheduled_local": "2024-08-19T09:00:00+02:00",
+                            "timezone": "Europe/Madrid",
+                        },
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ok": False,
+                        "error": {
+                            "code": "COMMON_VALIDATION",
+                            "message": "day_of_week must be between 0 and 6",
+                        },
+                    }
+                }
+            },
+        },
+    },
+)
 def schedule_weigh_in_endpoint(
     req: WeighInScheduleRequest,
     current_user: UserContext = Depends(get_current_user),
