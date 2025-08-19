@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, selectinload
@@ -8,6 +9,9 @@ from app.notifications.tasks import schedule_routine
 from app.progress import models as progress_models
 
 from . import models, schemas
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_routine(db: Session, routine_id: int, user: UserContext):
@@ -120,21 +124,96 @@ def update_routine(
     routine_update: schemas.RoutineUpdate,
     user: UserContext,
 ):
-    db_routine = get_routine(db, routine_id, user)
+    return update_routine_guarded(
+        db=db, routine_id=routine_id, user_id=user.id, payload=routine_update
+    )
 
-    if db_routine.owner_id != user.id:
+
+def update_routine_guarded(
+    db: Session,
+    routine_id: int,
+    user_id: int,
+    payload: schemas.RoutineUpdate | dict,
+) -> models.Routine:
+    """Apply soft-delete and pause guards before updating a routine."""
+    routine = (
+        db.query(models.Routine)
+        .filter(models.Routine.id == routine_id, models.Routine.owner_id == user_id)
+        .first()
+    )
+    if not routine:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Routine not found"
         )
 
-    update_data = routine_update.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_routine, key, value)
+    soft_deleted = False
+    if hasattr(routine, "deleted_at"):
+        soft_deleted = routine.deleted_at is not None
+    elif hasattr(routine, "is_deleted"):
+        soft_deleted = bool(routine.is_deleted)
+    if soft_deleted:
+        logger.info(
+            "routine_update_guard",
+            extra={
+                "routine_id": routine_id,
+                "user_id": user_id,
+                "soft_deleted": True,
+                "paused": False,
+                "updated_fields": [],
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Routine not found"
+        )
 
-    db.add(db_routine)
+    paused = False
+    if hasattr(routine, "active"):
+        paused = routine.active is False
+    elif hasattr(routine, "status"):
+        paused = routine.status == "paused"
+    if paused:
+        logger.info(
+            "routine_update_guard",
+            extra={
+                "routine_id": routine_id,
+                "user_id": user_id,
+                "soft_deleted": False,
+                "paused": True,
+                "updated_fields": [],
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Routine is paused; cannot update",
+        )
+
+    data = (
+        payload.model_dump(exclude_unset=True)
+        if hasattr(payload, "model_dump")
+        else dict(payload)
+    )
+    protected = {"id", "owner_id", "created_at", "updated_at", "deleted_at"}
+    update_data = {
+        k: v for k, v in data.items() if hasattr(routine, k) and k not in protected
+    }
+    for key, value in update_data.items():
+        setattr(routine, key, value)
+
+    db.add(routine)
     db.commit()
-    db.refresh(db_routine)
-    return db_routine
+    db.refresh(routine)
+
+    logger.info(
+        "routine_updated",
+        extra={
+            "routine_id": routine_id,
+            "user_id": user_id,
+            "paused": paused,
+            "soft_deleted": soft_deleted,
+            "updated_fields": list(update_data.keys()),
+        },
+    )
+    return routine
 
 
 def delete_routine(db: Session, routine_id: int, user: UserContext):
