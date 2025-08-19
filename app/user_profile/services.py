@@ -43,6 +43,36 @@ def create_profile(
     return obj
 
 
+def create_or_get_profile(
+    db: Session, user_id: int | str, payload: UserProfileCreate
+) -> tuple[UserProfile, bool]:
+    """Create a profile for the user or return the existing one.
+
+    Returns a tuple ``(profile, created)`` where ``created`` indicates whether
+    a new profile was inserted. This function is designed to be idempotent and
+    safe for concurrent calls.
+    """
+    # Check if a profile already exists to avoid unnecessary writes
+    existing = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+    if existing:
+        return existing, False
+
+    obj = UserProfile(**payload.model_dump())
+    obj.user_id = user_id
+    db.add(obj)
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another transaction might have inserted simultaneously
+        db.rollback()
+        existing = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        if existing:
+            return existing, False
+        raise
+    db.refresh(obj)
+    return obj, True
+
+
 def update_profile(
     db: Session, profile_id: int, data: UserProfileUpdate, current_user: UserContext
 ) -> UserProfile | None:
