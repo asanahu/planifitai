@@ -1,9 +1,10 @@
 import logging
 import time
-from datetime import date, time as dt_time
+from datetime import date
+from datetime import time as dt_time
 from typing import List, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext, get_current_user
@@ -12,13 +13,14 @@ from app.core.errors import (
     ok,
 )
 from app.dependencies import get_owned_routine
+from app.notifications import services as notif_services
 from app.progress import schemas as progress_schemas
 from app.schemas import adherence as adherence_schemas
+from app.schemas.exercises import ExerciseCatalogResponse, ExerciseRead
 from app.services import adherence as adherence_services
 from app.utils.datetimes import week_bounds
 
 from . import models, schemas, services
-from app.notifications import services as notif_services
 
 router = APIRouter(prefix="/routines", tags=["routines"])
 logger = logging.getLogger(__name__)
@@ -52,6 +54,36 @@ def read_public_templates(
     skip: int = 0, limit: int = 20, db: Session = Depends(get_db)
 ):
     return ok(services.get_public_templates(db=db, skip=skip, limit=limit))
+
+
+@router.get(
+    "/exercise-catalog",
+    response_model=ExerciseCatalogResponse,
+    summary="Catálogo de ejercicios",
+    description="Listado filtrable/paginable de ejercicios. Semana/MVP helper para frontend.",
+)
+def get_exercise_catalog(
+    q: str | None = Query(None),
+    muscle: str | None = Query(None),
+    equipment: str | None = Query(None),
+    level: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    rows, total = services.list_exercises(
+        db,
+        q=q,
+        muscle=muscle,
+        equipment=equipment,
+        level=level,
+        limit=limit,
+        offset=offset,
+    )
+    items = [ExerciseRead.model_validate(r) for r in rows]
+    return ok(
+        ExerciseCatalogResponse(items=items, total=total, limit=limit, offset=offset)
+    )
 
 
 @router.get(
