@@ -13,9 +13,7 @@ def auth_headers(tokens):
     return {"Authorization": f"Bearer {tokens['access_token']}"}
 
 
-def test_canonical_schedules_ok(
-    test_client: TestClient, routine_factory, auth_headers
-):
+def test_canonical_schedules_ok(test_client: TestClient, routine_factory, auth_headers):
     routine = routine_factory(active_days={"mon": True})
     resp = test_client.post(
         f"/api/v1/routines/{routine.id}/schedule-notifications", headers=auth_headers

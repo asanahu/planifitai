@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, time as dt_time
+import logging
+from datetime import datetime
+from datetime import time as dt_time
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-import logging
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -87,7 +88,7 @@ def schedule_routines(
     )
     headers = {
         "Deprecation": "true",
-        "Link": f"</api/v1/routines/{data.routine_id}/schedule-notifications>; rel=\"successor-version\"",
+        "Link": f'</api/v1/routines/{data.routine_id}/schedule-notifications>; rel="successor-version"',
     }
     logger.info(
         "schedule_routine_notifications",

@@ -136,6 +136,8 @@ jobs:
 
   ai-fallback:
     runs-on: ubuntu-latest
+    env:
+      AI_FEATURES_ENABLED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -158,6 +160,13 @@ jobs:
             sleep 1
           done
           echo "API log tail:"; tail -n 50 /tmp/api.log
+      - name: Wait for server
+        run: |
+          for i in {1..30}; do
+            curl -sf http://127.0.0.1:8000/health || curl -sf http://127.0.0.1:8000/docs || true
+            curl -sf http://127.0.0.1:8000/api/v1/ai/echo && exit 0 || sleep 1
+          done
+          exit 1
       - name: Call AI-dependent endpoint (fallback local)
         run: |
           curl -sf http://127.0.0.1:8000/api/v1/ai/echo || (echo "Fallback failed" && exit 1)

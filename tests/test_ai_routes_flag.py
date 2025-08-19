@@ -7,8 +7,10 @@ from fastapi.testclient import TestClient
 def _reload_app_with_flag(value: bool):
     os.environ["AI_FEATURES_ENABLED"] = "true" if value else "false"
     import app.core.config as cfg
+
     importlib.reload(cfg)
     import app.main as m
+
     importlib.reload(m)
     return m.app
 
