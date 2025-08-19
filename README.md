@@ -106,6 +106,15 @@ The API documentation is available at:
 *   **Swagger UI:** `/api/v1/docs`
 *   **ReDoc:** `/api/v1/redoc`
 
+### Endpoints de programación de notificaciones (MVP)
+
+| Estado | Endpoint |
+| --- | --- |
+| ✅ Canónico | `POST /api/v1/routines/{id}/schedule-notifications` |
+| ⚠️ Deprecated | `POST /api/v1/notifications/schedule/routines` |
+
+Las llamadas son idempotentes y, en el duplicado, la respuesta incluye la cabecera `Deprecation: true` con un enlace al sucesor.
+
 ## POST /api/v1/training/generate
 
 Genera un plan de entrenamiento a partir de los siguientes campos:

@@ -13,6 +13,22 @@ from . import crud, models, schemas
 DEFAULT_TZ = "Europe/Madrid"
 
 
+class ScheduleResult(dict):
+    """Wrapper result for scheduling operations.
+
+    Acts like a ``dict`` for JSON serialization while ``len(result)``
+    returns the number of notifications created, keeping backward
+    compatibility with Celery tasks that expect a sequence-like object.
+    """
+
+    def __init__(self, notifications: list[models.Notification]):
+        super().__init__({"scheduled_count": len(notifications)})
+        self._notifications = notifications
+
+    def __len__(self) -> int:  # pragma: no cover - simple delegation
+        return len(self._notifications)
+
+
 def _tz(pref: models.NotificationPreference | None) -> str:
     return pref.tz if pref and pref.tz else DEFAULT_TZ
 
@@ -49,7 +65,7 @@ def schedule_routine_notifications(
     routine_id: int,
     active_days: Dict[str, bool],
     hour_local: time,
-) -> list[models.Notification]:
+) -> ScheduleResult:
     pref = crud.get_preferences(db, user_id)
     tz = _tz(pref)
     today = date.today()
@@ -74,7 +90,7 @@ def schedule_routine_notifications(
             dedupe_key=dedupe_key,
         )
         created.append(crud.create_notification(db, notif))
-    return created
+    return ScheduleResult(created)
 
 
 def schedule_nutrition_reminders(

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time as dt_time
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,8 @@ from app.schemas.notifications import (
 )
 
 from . import crud, models, schemas, services, tasks
+
+logger = logging.getLogger(__name__)
 
 # ensure models imported
 
@@ -45,22 +48,58 @@ def put_preferences(
 
 class RoutineScheduleRequest(BaseModel):
     routine_id: int
-    active_days: Dict[str, bool]
-    hour_local: Optional[str] = "07:30"
+    active_days: Dict[str, bool] | None = None
+    hour_local: Optional[str] = None
 
 
-@router.post("/schedule/routines")
+@router.post(
+    "/schedule/routines",
+    deprecated=True,
+    summary="(DEPRECATED) Programar notificaciones de rutina",
+    description=(
+        "Este endpoint será retirado. Usa "
+        "`POST /api/v1/routines/{id}/schedule-notifications` en su lugar."
+    ),
+    responses={
+        200: {
+            "description": "Notificaciones programadas",
+            "content": {
+                "application/json": {
+                    "example": {"ok": True, "data": {"scheduled_count": 3}}
+                }
+            },
+        }
+    },
+)
 def schedule_routines(
     data: RoutineScheduleRequest,
     current_user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    tasks.schedule_routine_notifications_task.delay(
+    hour_str = data.hour_local or "07:30"
+    hour, minute = map(int, hour_str.split(":"))
+    res = services.schedule_routine_notifications(
+        db,
         user_id=current_user.id,
         routine_id=data.routine_id,
-        active_days=data.active_days,
-        hour_local=data.hour_local or "07:30",
+        active_days=data.active_days or {},
+        hour_local=dt_time(hour, minute),
     )
-    return {"scheduled": True}
+    headers = {
+        "Deprecation": "true",
+        "Link": f"</api/v1/routines/{data.routine_id}/schedule-notifications>; rel=\"successor-version\"",
+    }
+    logger.info(
+        "schedule_routine_notifications",
+        extra={
+            "event": "schedule_routine_notifications",
+            "routine_id": data.routine_id,
+            "user_id": current_user.id,
+            "scheduled_count": res["scheduled_count"],
+            "deprecated_call": True,
+        },
+    )
+    return ok(res, headers=headers)
 
 
 class NutritionScheduleRequest(BaseModel):
