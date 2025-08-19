@@ -14,15 +14,14 @@ def unwrap(j):
 def auth_hdr(tokens):
     try:
         from tests.utils import auth_headers as _auth_headers  # type: ignore
+
         return _auth_headers(tokens)
     except Exception:  # pragma: no cover - fallback
         return {"Authorization": f"Bearer {tokens['access_token']}"}
 
 
 def _patch(client: TestClient, rid: int, payload: dict, tokens):
-    return client.put(
-        f"/api/v1/routines/{rid}", json=payload, headers=auth_hdr(tokens)
-    )
+    return client.put(f"/api/v1/routines/{rid}", json=payload, headers=auth_hdr(tokens))
 
 
 def _soft_delete(db, routine):
