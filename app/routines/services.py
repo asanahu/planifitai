@@ -1,7 +1,9 @@
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import List, Tuple
 
 from fastapi import HTTPException, status
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.deps import UserContext
@@ -10,8 +12,72 @@ from app.progress import models as progress_models
 
 from . import models, schemas
 
-
 logger = logging.getLogger(__name__)
+
+
+def list_exercises(
+    db: Session,
+    q: str | None = None,
+    muscle: str | None = None,
+    equipment: str | None = None,
+    level: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> Tuple[List[object], int]:
+    """Return exercise catalog rows and total count with optional filters."""
+
+    Exercise = getattr(models, "Exercise", None) or getattr(models, "ExerciseCatalog")
+
+    stmt = select(Exercise)
+    where_clauses = []
+
+    if q:
+        pattern = f"%{q.lower()}%"
+        search_cols = [func.lower(Exercise.name)]
+        if hasattr(Exercise, "pattern"):
+            search_cols.append(func.lower(getattr(Exercise, "pattern")))
+        if hasattr(Exercise, "tags"):
+            search_cols.append(func.lower(getattr(Exercise, "tags")))
+        where_clauses.append(or_(*[c.like(pattern) for c in search_cols]))
+
+    if muscle:
+        muscle_col = None
+        for attr in ["muscle_groups", "muscles", "muscle", "category"]:
+            if hasattr(Exercise, attr):
+                muscle_col = getattr(Exercise, attr)
+                break
+        if muscle_col is not None:
+            coltype = muscle_col.type.__class__.__name__.lower()
+            if "array" in coltype or "json" in coltype:
+                where_clauses.append(muscle_col.contains([muscle]))
+            else:
+                where_clauses.append(func.lower(muscle_col).like(f"%{muscle.lower()}%"))
+
+    if equipment and hasattr(Exercise, "equipment"):
+        where_clauses.append(
+            func.lower(getattr(Exercise, "equipment")) == equipment.lower()
+        )
+
+    if level:
+        level_col = None
+        for attr in ["level", "difficulty", "description"]:
+            if hasattr(Exercise, attr):
+                level_col = getattr(Exercise, attr)
+                break
+        if level_col is not None:
+            where_clauses.append(func.lower(level_col) == level.lower())
+
+    if where_clauses:
+        stmt = stmt.where(and_(*where_clauses))
+
+    count_stmt = select(func.count()).select_from(Exercise)
+    if where_clauses:
+        count_stmt = count_stmt.where(and_(*where_clauses))
+    total = db.scalar(count_stmt) or 0
+
+    stmt = stmt.order_by(func.lower(Exercise.name)).limit(limit).offset(offset)
+    rows = db.execute(stmt).scalars().all()
+    return rows, total
 
 
 def get_routine(db: Session, routine_id: int, user: UserContext):
