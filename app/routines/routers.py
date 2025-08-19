@@ -60,7 +60,52 @@ def read_public_templates(
     "/exercise-catalog",
     response_model=ExerciseCatalogResponse,
     summary="Catálogo de ejercicios",
-    description="Listado filtrable/paginable de ejercicios. Semana/MVP helper para frontend.",
+    description=(
+        "Listado paginado de ejercicios filtrable por `q`, `muscle`, "
+        "`equipment` y `level`. Usa `limit`/`offset` y ordena por nombre ascendente."
+    ),
+    responses={
+        200: {
+            "description": "Catálogo de ejercicios",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ok": True,
+                        "data": {
+                            "items": [
+                                {
+                                    "id": 1,
+                                    "name": "Push Up",
+                                    "muscle_groups": ["chest", "triceps"],
+                                    "equipment": "bodyweight",
+                                    "level": "beginner",
+                                    "pattern": "push",
+                                    "demo_url": "https://example.com/demo",
+                                }
+                            ],
+                            "total": 1,
+                            "limit": 50,
+                            "offset": 0,
+                        },
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ok": False,
+                        "error": {
+                            "code": "COMMON_VALIDATION",
+                            "message": "limit must be between 1 and 100",
+                        },
+                    }
+                }
+            },
+        },
+    },
 )
 def get_exercise_catalog(
     q: str | None = Query(None),
