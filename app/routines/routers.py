@@ -182,19 +182,18 @@ def get_routine_adherence(
 
 @router.put("/{routine_id}", response_model=schemas.RoutineRead)
 def update_routine(
+    routine_id: int,
     routine_update: schemas.RoutineUpdate,
-    routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return ok(
-        services.update_routine(
-            db=db,
-            routine_id=routine.id,
-            routine_update=routine_update,
-            user=current_user,
-        )
+    routine = services.update_routine_guarded(
+        db=db,
+        routine_id=routine_id,
+        user_id=current_user.id,
+        payload=routine_update,
     )
+    return ok(schemas.RoutineRead.model_validate(routine))
 
 
 @router.delete("/{routine_id}", status_code=status.HTTP_204_NO_CONTENT)
