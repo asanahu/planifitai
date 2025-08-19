@@ -46,11 +46,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 2) Lint rápido con Ruff — BLOQUEANTE (sustituye a flake8)
-      - name: Ruff (lint best-effort)
-        run: ruff check . || true
+      - name: Ruff (Python only)
+        run: ruff check .
 
       # 3) Formato con Black (modo check) — BLOQUEANTE
-      - name: Black (check)
+      - name: Black (Python only)
         run: black --check .
 
       # 4) Análisis estático de seguridad — NO bloqueante (reduce falsos positivos)
