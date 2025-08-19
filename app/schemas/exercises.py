@@ -7,16 +7,30 @@ class ExerciseRead(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: int | str
-    name: str
+    name: str = Field(description="Nombre del ejercicio", examples=["Push Up"])
     muscle_groups: List[str] = Field(
         default_factory=list,
         validation_alias="category",
         description="Grupo(s) muscular(es)",
+        examples=[["chest", "triceps"]],
     )
-    equipment: Optional[str] = None
-    level: Optional[str] = Field(default=None, validation_alias="description")
-    pattern: Optional[str] = None
-    demo_url: Optional[HttpUrl] = None
+    equipment: Optional[str] = Field(
+        default=None, description="Equipo requerido", examples=["bodyweight"]
+    )
+    level: Optional[str] = Field(
+        default=None,
+        validation_alias="description",
+        description="Nivel de dificultad",
+        examples=["beginner"],
+    )
+    pattern: Optional[str] = Field(
+        default=None, description="Patrón de movimiento", examples=["push"]
+    )
+    demo_url: Optional[HttpUrl] = Field(
+        default=None,
+        description="URL demo",
+        examples=["https://example.com/demo"],
+    )
 
     @field_validator("muscle_groups", mode="before")
     @classmethod

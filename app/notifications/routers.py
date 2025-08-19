@@ -124,12 +124,12 @@ def schedule_nutrition(
 @router.post(
     "/schedule/weigh-in",
     response_model=WeighInScheduleResponse,
-    summary="Schedule weekly weigh-in notifications",
+    summary="Programar recordatorios semanales de peso",
     description=(
-        "Create weekly weigh-in reminders for the authenticated user. "
-        "`day_of_week` uses 0=Monday .. 6=Sunday. `local_time` is interpreted in"
-        " the user's timezone (default `Europe/Madrid`)."
-        " `weeks_ahead` defines how many upcoming reminders are created."
+        "Crea recordatorios semanales de peso para el usuario autenticado. "
+        "`day_of_week` usa 0=Lunes .. 6=Domingo y `local_time` se interpreta en "
+        "la zona horaria del usuario (por defecto `Europe/Madrid`). "
+        "`weeks_ahead` indica cuántos recordatorios futuros se crean."
     ),
     responses={
         200: {
