@@ -99,6 +99,22 @@ AI_INTERNAL_SECRET=<shared-secret>
 
 Si se elimina `AI_SERVICE_URL` el sistema vuelve automáticamente al modo local.
 
+## Feature flags (MVP)
+
+Las rutas de IA están deshabilitadas por defecto.
+
+- `AI_FEATURES_ENABLED=false` (por defecto): oculta `/api/v1/ai/*`
+- `AI_FEATURES_ENABLED=true`: expone `/api/v1/ai/*`
+
+Ejemplo:
+
+```bash
+export AI_FEATURES_ENABLED=true
+uvicorn app.main:app --reload
+```
+
+En CI mantenerlo en `false`.
+
 ## API Documentation
 
 The API documentation is available at:

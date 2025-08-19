@@ -54,7 +54,8 @@ def create_app() -> FastAPI:
     app.include_router(progress_router, prefix=settings.API_V1_STR)
     app.include_router(nutrition_router, prefix=settings.API_V1_STR)
     app.include_router(notifications_router, prefix=settings.API_V1_STR)
-    app.include_router(ai_router, prefix=settings.API_V1_STR)
+    if settings.AI_FEATURES_ENABLED:
+        app.include_router(ai_router, prefix=settings.API_V1_STR)
 
     # 🔴 Importante: training_router ya tiene prefix="/api/v1/training"
     # Por eso se incluye SIN prefix extra para evitar /api/v1/api/v1/training

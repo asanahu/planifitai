@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,9 @@ class Settings(BaseSettings):
     # PHI encryption
     PHI_ENCRYPTION_KEY: str
     PHI_PROVIDER: str = "app"
+
+    # Feature flags
+    AI_FEATURES_ENABLED: bool = Field(default=False)
 
     # Opcionales (si los usas después)
     OPENAI_API_KEY: str | None = None
