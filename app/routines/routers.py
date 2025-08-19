@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import date
+from datetime import date, time as dt_time
 from typing import List, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -18,6 +18,7 @@ from app.services import adherence as adherence_services
 from app.utils.datetimes import week_bounds
 
 from . import models, schemas, services
+from app.notifications import services as notif_services
 
 router = APIRouter(prefix="/routines", tags=["routines"])
 logger = logging.getLogger(__name__)
@@ -311,19 +312,52 @@ def delete_routine_exercise(
     return ok(None, status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/{routine_id}/schedule-notifications")
+@router.post(
+    "/{routine_id}/schedule-notifications",
+    summary="Programar notificaciones de rutina (canónico)",
+    description="Crea recordatorios para los próximos 7 días en la zona horaria del usuario.",
+    responses={
+        200: {
+            "description": "Notificaciones programadas",
+            "content": {
+                "application/json": {
+                    "example": {"ok": True, "data": {"scheduled_count": 3}}
+                }
+            },
+        }
+    },
+)
 def schedule_notifications(
     payload: schemas.ScheduleNotificationsRequest | None = None,
     routine: models.Routine = Depends(get_owned_routine),
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    hour = payload.hour if payload else None
-    return ok(
-        services.schedule_routine_notifications(
-            db=db, routine_id=routine.id, user=current_user, hour=hour
+    if not routine.active_days:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Routine has no active days",
         )
+    hour = payload.hour if payload else None
+    hour_local = dt_time(hour, 0) if hour is not None else dt_time(7, 30)
+    res = notif_services.schedule_routine_notifications(
+        db,
+        user_id=current_user.id,
+        routine_id=routine.id,
+        active_days=routine.active_days,
+        hour_local=hour_local,
     )
+    logger.info(
+        "schedule_routine_notifications",
+        extra={
+            "event": "schedule_routine_notifications",
+            "routine_id": routine.id,
+            "user_id": current_user.id,
+            "scheduled_count": res["scheduled_count"],
+            "deprecated_call": False,
+        },
+    )
+    return ok(res)
 
 
 @router.post(
