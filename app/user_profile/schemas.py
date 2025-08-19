@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.user_profile.models import ActivityLevel, Goal
 
@@ -31,6 +31,4 @@ class UserProfileUpdate(UserProfileBase):
 class UserProfileRead(UserProfileBase):
     id: int
     user_id: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
