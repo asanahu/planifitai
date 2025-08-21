@@ -11,6 +11,7 @@ import NutritionTodayPage from './pages/NutritionToday';
 import NutritionPlanPage from './pages/NutritionPlan';
 import ShoppingListPage from './pages/ShoppingList';
 import ProgressPage from './pages/Progress';
+import ReportsPage from './pages/Reports';
 import { Notifications } from './features/notifications/Notifications';
 import Navbar from './components/Navbar';
 import { useAuthStore } from './features/auth/useAuthStore';
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/nutrition/plan" element={<PrivateRoute><NutritionPlanPage /></PrivateRoute>} />
         <Route path="/shopping-list" element={<PrivateRoute><ShoppingListPage /></PrivateRoute>} />
         <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+        <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
         <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/today" />} />
       </Routes>

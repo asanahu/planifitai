@@ -1,15 +1,26 @@
-export interface WeekAdherenceInput {
-  activeDays: boolean[]; // length 7 starting Monday
-  workoutsDone: Date[];
+export interface WeekWorkout {
+  planned: boolean;
+  completed: boolean;
 }
 
-export function calcWeekAdherence({ activeDays, workoutsDone }: WeekAdherenceInput) {
-  const countPlanned = activeDays.filter(Boolean).length;
-  const doneSet = new Set(workoutsDone.map((d) => ((d.getDay() + 6) % 7) + 1));
-  let countDone = 0;
-  activeDays.forEach((active, idx) => {
-    if (active && doneSet.has(idx + 1)) countDone++;
-  });
-  const rate = countPlanned === 0 ? 0 : Math.round((countDone / countPlanned) * 100);
-  return { countPlanned, countDone, rate };
+export interface WeekMeal {
+  target: number;
+  calories: number;
+}
+
+export function calcWeekAdherence(
+  workouts: WeekWorkout[],
+  meals: WeekMeal[]
+) {
+  const planned = workouts.filter((w) => w.planned).length;
+  const done = workouts.filter((w) => w.planned && w.completed).length;
+  const workoutsPct = planned === 0 ? 0 : Math.round((done / planned) * 100);
+
+  const mealDays = meals.filter((m) => m.target > 0).length;
+  const mealOk = meals.filter((m) => m.target > 0 && m.calories <= m.target).length;
+  const nutritionPct = mealDays === 0 ? 0 : Math.round((mealOk / mealDays) * 100);
+
+  const overallPct = Math.round((workoutsPct + nutritionPct) / 2);
+
+  return { workoutsPct, nutritionPct, overallPct };
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Routine } from '../../api/routines';
 import { today } from '../../utils/date';
-import { calcWeekAdherence } from '../../utils/adherence';
+import { calcWeekAdherence, type WeekWorkout } from '../../utils/adherence';
 import { Skeleton } from '../../components/ui/Skeleton';
 
 interface Props {
@@ -15,17 +15,19 @@ export default function WeekView({ routine, selected, onSelect }: Props) {
   const [offset, setOffset] = useState(0);
   if (!routine) return <Skeleton className="h-24" />;
   const days = routine.days.slice(offset, offset + 7);
-  const activeDays = days.map(() => true);
-  const workoutsDone = days
-    .filter((d) => d.exercises.every((e) => e.completed))
-    .map((d) => new Date(d.date));
-  const adh = calcWeekAdherence({ activeDays, workoutsDone });
+  const workouts: WeekWorkout[] = days.map((d) => ({
+    planned: true,
+    completed: d.exercises.every((e) => e.completed),
+  }));
+  const adh = calcWeekAdherence(workouts, []);
+  const planned = workouts.length;
+  const done = workouts.filter((w) => w.completed).length;
   return (
     <div className="space-y-2">
       <div className="mb-2 flex justify-between text-sm">
         <button className="h-10 px-4" onClick={() => setOffset(Math.max(0, offset - 7))}>Semana anterior</button>
         <span>
-          {adh.countDone}/{adh.countPlanned} ({adh.rate}%)
+          {done}/{planned} ({adh.workoutsPct}%)
         </span>
         <button className="h-10 px-4" onClick={() => setOffset(offset + 7)}>Siguiente</button>
       </div>

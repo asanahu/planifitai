@@ -37,6 +37,9 @@ export default function Navbar() {
         <li>
           <NavLink to="/progress">Progress</NavLink>
         </li>
+        <li>
+          <NavLink to="/reports">Reports</NavLink>
+        </li>
         <li className="relative">
           <NavLink to="/notifications">Notifications</NavLink>
           {count > 0 && (
