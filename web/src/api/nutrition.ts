@@ -33,6 +33,11 @@ export interface Summary {
   target?: number;
 }
 
+export interface MealPlanCreatePayload {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
 export function getDayLog(date: string) {
   return apiFetch<DayLog>(`/nutrition?date=${date}`);
 }
@@ -77,4 +82,12 @@ export function addWater(amount: number) {
     method: 'POST',
     body: JSON.stringify({ amount }),
   });
+}
+
+export function createMealPlan(payload: MealPlanCreatePayload) {
+  return apiFetch('/meal-plans', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function getMealPlan(params: { start: string; end: string }) {
+  return apiFetch(`/meal-plans?start=${params.start}&end=${params.end}`);
 }
