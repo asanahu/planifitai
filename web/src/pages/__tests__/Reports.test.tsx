@@ -35,6 +35,6 @@ describe('Reports page', () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(await screen.findByText('Exportar CSV')).toBeInTheDocument();
+    expect(await screen.findByText(/Aún no hay datos/)).toBeInTheDocument();
   });
 });

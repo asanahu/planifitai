@@ -1,10 +1,10 @@
 import type { ReactElement } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import DashboardPage from './pages/Dashboard';
 import TodayPage from './pages/Today';
-import ProfileOnboardingPage from './pages/ProfileOnboarding';
+import OnboardingWizard from './features/onboarding/OnboardingWizard';
 import WorkoutPage from './pages/Workout';
 import WorkoutGeneratePage from './pages/WorkoutGenerate';
 import NutritionTodayPage from './pages/NutritionToday';
@@ -15,16 +15,27 @@ import ReportsPage from './pages/Reports';
 import { Notifications } from './features/notifications/Notifications';
 import Navbar from './components/Navbar';
 import { useAuthStore } from './features/auth/useAuthStore';
+import { useQuery } from '@tanstack/react-query';
+import { getProfile } from './api/profile';
+import { getUserRoutines } from './api/routines';
 
 function PrivateRoute({ children }: { children: ReactElement }) {
   const { accessToken } = useAuthStore();
-  return accessToken ? (
+  const location = useLocation();
+  const skip = new URLSearchParams(location.search).get('skip') === '1';
+  const profileQuery = useQuery({ queryKey: ['profile'], queryFn: getProfile, enabled: !!accessToken });
+  const routinesQuery = useQuery({ queryKey: ['routines'], queryFn: getUserRoutines, enabled: !!accessToken });
+  if (!accessToken) return <Navigate to="/login" />;
+  const needsOnboarding =
+    location.pathname !== '/onboarding' &&
+    !skip &&
+    (profileQuery.data === null || (routinesQuery.data?.length || 0) === 0);
+  if (needsOnboarding) return <Navigate to="/onboarding" replace />;
+  return (
     <>
       <Navbar />
       {children}
     </>
-  ) : (
-    <Navigate to="/login" />
   );
 }
 
@@ -34,7 +45,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/profile" element={<PrivateRoute><ProfileOnboardingPage /></PrivateRoute>} />
+        <Route path="/onboarding" element={<PrivateRoute><OnboardingWizard /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
         <Route path="/today" element={<PrivateRoute><TodayPage /></PrivateRoute>} />
         <Route path="/workout" element={<PrivateRoute><WorkoutPage /></PrivateRoute>} />

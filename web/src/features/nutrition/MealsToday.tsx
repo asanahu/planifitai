@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   getDayLog,
   createMeal,
@@ -27,6 +28,30 @@ export default function MealsToday() {
   });
 
   if (!data) return <p>Cargando...</p>;
+  if (data.meals.length === 0) {
+    return (
+      <div className="space-y-2 p-3">
+        <p>No hay comidas registradas</p>
+        <div className="flex gap-2">
+          <button
+            className="rounded bg-blue-500 px-4 py-2 text-white"
+            onClick={() => {
+              const name = prompt('Nombre de la comida');
+              if (name) addMeal.mutate(name);
+            }}
+          >
+            Añadir primera comida
+          </button>
+          <Link
+            to="/nutrition/plan"
+            className="rounded border px-4 py-2"
+          >
+            Plan semanal
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const consumed = data.calories ?? data.totals?.calories ?? 0;
   const progress = data.targets?.calories

@@ -93,20 +93,23 @@ export function TodayWorkoutCard() {
       <div className="flex flex-wrap gap-2">
         <Link
           to="/workout"
-          className="flex h-10 items-center gap-1 rounded border px-4 text-sm"
+          aria-label="Ver semana de entrenamiento"
+          className="flex h-10 items-center gap-1 rounded border px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <CalendarDays className="h-4 w-4" /> Ver semana
         </Link>
         <Link
           to="/workout"
-          className="flex h-10 items-center gap-1 rounded bg-blue-500 px-4 text-sm text-white"
+          aria-label="Empezar entrenamiento"
+          className="flex h-10 items-center gap-1 rounded bg-blue-500 px-4 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <Play className="h-4 w-4" /> Empezar ahora
         </Link>
         {!allDone && (
           <button
             onClick={() => mutation.mutate({ routineId: routine.id, dayId: day.id })}
-            className="flex h-10 items-center gap-1 rounded bg-green-500 px-4 text-sm text-white"
+            aria-label="Marcar día completado"
+            className="flex h-10 items-center gap-1 rounded bg-green-500 px-4 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <CheckCircle className="h-4 w-4" /> Marcar día completado
           </button>

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { TodayWorkoutCard } from '../features/today/TodayWorkoutCard';
 import { TodayNutritionCard } from '../features/today/TodayNutritionCard';
 import { QuickWeighCard } from '../features/today/QuickWeighCard';
@@ -35,6 +36,27 @@ export default function TodayPage() {
     queryKey: ['weight-30d', date],
     queryFn: () => listProgress({ metric: 'weight', start: daysAgo(30), end: date }),
   });
+
+  if (!routineQuery.data && (!nutritionQuery.data || nutritionQuery.data.meals.length === 0)) {
+    return (
+      <div className="p-3">
+        <div className="space-y-2 rounded border bg-white p-4 shadow-sm dark:bg-gray-800">
+          <p>No tienes actividades hoy. ¡Empieza creando tu plan!</p>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Link to="/workout/generate" className="rounded bg-blue-500 px-4 py-2 text-white">
+              Crear rutina
+            </Link>
+            <Link to="/nutrition/today" className="rounded border px-4 py-2">
+              Añadir comida
+            </Link>
+            <Link to="/progress" className="rounded border px-4 py-2">
+              Registrar peso
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   let sessionsVal: string | number = '-';
   let adherenceVal: string | number = '-';

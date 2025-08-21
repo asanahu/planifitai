@@ -10,7 +10,7 @@ import * as routines from '../../../api/routines';
 
 describe('GenerateFromAI', () => {
   it('calls AI and creates routine', async () => {
-    vi.stubEnv('VITE_USE_AI_WORKOUT_GENERATOR', 'true');
+    vi.stubEnv('VITE_FEATURE_AI', '1');
     vi.spyOn(ai, 'generateWorkoutPlanAI').mockResolvedValue({ days: [] });
     const createSpy = vi.spyOn(routines, 'createRoutine').mockResolvedValue({ id: '1', name: '', days: [] });
     vi.spyOn(routines, 'setActiveRoutine').mockResolvedValue(undefined);
@@ -27,7 +27,7 @@ describe('GenerateFromAI', () => {
   });
 
   it('uses fallback on error', async () => {
-    vi.stubEnv('VITE_USE_AI_WORKOUT_GENERATOR', 'true');
+    vi.stubEnv('VITE_FEATURE_AI', '1');
     vi.spyOn(ai, 'generateWorkoutPlanAI').mockRejectedValue(new Error('fail'));
     const createSpy = vi.spyOn(routines, 'createRoutine').mockResolvedValue({ id: '1', name: '', days: [] });
     vi.spyOn(routines, 'setActiveRoutine').mockResolvedValue(undefined);

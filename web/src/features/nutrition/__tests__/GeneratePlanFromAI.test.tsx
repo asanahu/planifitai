@@ -9,7 +9,7 @@ import * as storage from '../../../utils/storage';
 
 describe('GeneratePlanFromAI', () => {
   it('stores plan locally', async () => {
-    vi.stubEnv('VITE_USE_AI_NUTRITION_GENERATOR', 'true');
+    vi.stubEnv('VITE_FEATURE_AI', '1');
     vi.spyOn(ai, 'generateNutritionPlanAI').mockResolvedValue({ days: [] });
     const setSpy = vi.spyOn(storage, 'setMealPlan');
     const qc = new QueryClient();

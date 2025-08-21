@@ -12,7 +12,7 @@ export function TodayReminders() {
   const qc = useQueryClient();
   const notifQuery = useQuery({
     queryKey: ['notifications', date],
-    queryFn: () => listNotifications({ date, state: 'scheduled' }),
+    queryFn: () => listNotifications({ date, state: 'scheduled|sent_today' }),
   });
   const routineQuery = useQuery({
     queryKey: ['routine-day', date],
