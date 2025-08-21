@@ -20,3 +20,11 @@ export function daysAgo(days: number): string {
   d.setDate(d.getDate() - days);
   return format(d);
 }
+
+export function startOfWeek(d: Date): Date {
+  const day = d.getDay();
+  const diff = (day + 6) % 7; // monday start
+  const result = new Date(d);
+  result.setDate(d.getDate() - diff);
+  return result;
+}

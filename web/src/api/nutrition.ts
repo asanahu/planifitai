@@ -17,9 +17,10 @@ export interface Meal {
 export interface DayLog {
   date: string;
   meals: Meal[];
-  water: number;
   targets: { calories: number };
-  calories: number;
+  totals: { calories: number };
+  adherence?: { calories: number };
+  calories?: number;
 }
 
 export interface Targets {
