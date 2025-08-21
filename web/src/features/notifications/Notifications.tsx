@@ -7,23 +7,39 @@ export function Notifications() {
   const date = today();
   const qc = useQueryClient();
   const { data } = useQuery<Notification[]>({
-    queryKey: ['notifications', { date, state: 'scheduled' }],
+    queryKey: ['notifications', date],
     queryFn: () => listNotifications({ date, state: 'scheduled' }),
   });
   const mutation = useMutation({
     mutationFn: (id: string) => markAsRead(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
+  const markAll = useMutation({
+    mutationFn: async () => {
+      const list = data || [];
+      await Promise.all(list.map((n) => markAsRead(n.id)));
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
   if (!data) return <p>Cargando...</p>;
   if (data.length === 0) return <p>Sin notificaciones</p>;
   return (
-    <ul className="space-y-2">
-      {data.map((n) => (
-        <li key={n.id} className="flex justify-between border p-2 rounded">
-          <span>{n.message}</span>
-          <button className="text-sm text-blue-500" onClick={() => mutation.mutate(n.id)}>Leer</button>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-4">
+      <div className="text-right">
+        <button className="h-10 rounded bg-blue-500 px-4 text-sm text-white" onClick={() => markAll.mutate()}>
+          Marcar todo como visto
+        </button>
+      </div>
+      <ul className="space-y-2 text-sm">
+        {data.map((n) => (
+          <li key={n.id} className="flex justify-between rounded border p-2">
+            <span>{n.message}</span>
+            <button className="text-blue-500" onClick={() => mutation.mutate(n.id)}>
+              Leer
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

@@ -1,3 +1,9 @@
 export function Skeleton({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded bg-gray-200 ${className}`}></div>;
+  return (
+    <div
+      role="status"
+      aria-label="loading"
+      className={`animate-pulse rounded bg-gray-200 ${className}`}
+    />
+  );
 }

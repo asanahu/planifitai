@@ -34,7 +34,7 @@ export default function MealsToday() {
     : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 p-3 text-sm">
       <div>
         <div className="mb-2">Adherencia: {progress}%</div>
         <div className="h-2 w-full bg-gray-200">
@@ -42,34 +42,56 @@ export default function MealsToday() {
         </div>
       </div>
       {data.meals.map((meal) => (
-        <div key={meal.id} className="rounded border p-2">
+        <div key={meal.id} className="space-y-2 rounded border p-3">
           <div className="flex justify-between">
             <h3 className="font-semibold">{meal.name}</h3>
             <div className="space-x-2 text-sm">
-              <button onClick={() => {
-                const name = prompt('Nuevo nombre', meal.name);
-                if (name) updateMeal(meal.id, { name }).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }));
-              }}>Editar</button>
-              <button onClick={() => deleteMeal(meal.id).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }))}>Borrar</button>
+              <button
+                className="h-8 px-2"
+                onClick={() => {
+                  const name = prompt('Nuevo nombre', meal.name);
+                  if (name) updateMeal(meal.id, { name }).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }));
+                }}
+              >
+                Editar
+              </button>
+              <button
+                className="h-8 px-2"
+                onClick={() => deleteMeal(meal.id).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }))}
+              >
+                Borrar
+              </button>
             </div>
           </div>
-          <ul className="mt-2 space-y-1">
+          <ul className="space-y-1">
             {meal.items.map((item) => (
               <li key={item.id} className="flex justify-between">
-                <span>{item.name} ({item.quantity} {item.unit}) - {item.calories} kcal</span>
+                <span>
+                  {item.name} ({item.quantity} {item.unit}) - {item.calories} kcal
+                </span>
                 <div className="space-x-1 text-sm">
-                  <button onClick={() => {
-                    const name = prompt('Nombre', item.name);
-                    if (!name) return;
-                    updateMealItem(item.id, { name }).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }));
-                  }}>Ed</button>
-                  <button onClick={() => deleteMealItem(item.id).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }))}>Del</button>
+                  <button
+                    className="h-8 px-2"
+                    onClick={() => {
+                      const name = prompt('Nombre', item.name);
+                      if (!name) return;
+                      updateMealItem(item.id, { name }).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }));
+                    }}
+                  >
+                    Ed
+                  </button>
+                  <button
+                    className="h-8 px-2"
+                    onClick={() => deleteMealItem(item.id).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }))}
+                  >
+                    Del
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
           <button
-            className="mt-2 text-sm text-blue-500"
+            className="mt-2 h-8 text-blue-500"
             onClick={() => {
               const name = prompt('Item');
               if (!name) return;
@@ -84,7 +106,7 @@ export default function MealsToday() {
         </div>
       ))}
       <button
-        className="btn"
+        className="h-10 rounded bg-blue-500 px-4 text-white"
         onClick={() => {
           const name = prompt('Nombre de la comida');
           if (name) addMeal.mutate(name);
