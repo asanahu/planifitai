@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import DashboardPage from './pages/Dashboard';
+import TodayPage from './pages/Today';
 import ProfileOnboardingPage from './pages/ProfileOnboarding';
 import WorkoutPage from './pages/Workout';
 import WorkoutGeneratePage from './pages/WorkoutGenerate';
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/profile" element={<PrivateRoute><ProfileOnboardingPage /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/today" element={<PrivateRoute><TodayPage /></PrivateRoute>} />
         <Route path="/workout" element={<PrivateRoute><WorkoutPage /></PrivateRoute>} />
         <Route path="/workout/generate" element={<PrivateRoute><WorkoutGeneratePage /></PrivateRoute>} />
         <Route path="/nutrition/today" element={<PrivateRoute><NutritionTodayPage /></PrivateRoute>} />
@@ -41,7 +43,7 @@ export default function App() {
         <Route path="/shopping-list" element={<PrivateRoute><ShoppingListPage /></PrivateRoute>} />
         <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
         <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/today" />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,10 +1,5 @@
-import { Dashboard } from '../features/dashboard/Dashboard';
+import { Navigate } from 'react-router-dom';
 
 export default function DashboardPage() {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl mb-4">Hoy</h1>
-      <Dashboard />
-    </div>
-  );
+  return <Navigate to="/today" />;
 }

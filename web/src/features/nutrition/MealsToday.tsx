@@ -28,8 +28,9 @@ export default function MealsToday() {
 
   if (!data) return <p>Cargando...</p>;
 
+  const consumed = data.calories ?? data.totals?.calories ?? 0;
   const progress = data.targets?.calories
-    ? Math.min(100, Math.round((data.calories / data.targets.calories) * 100))
+    ? Math.min(100, Math.round((consumed / data.targets.calories) * 100))
     : 0;
 
   return (

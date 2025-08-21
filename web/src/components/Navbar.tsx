@@ -14,7 +14,7 @@ export default function Navbar() {
     <nav className="flex items-center justify-between p-4 bg-gray-800 text-white">
       <div className="font-bold">PlanifitAI</div>
       <ul className="flex space-x-4">
-        <li><NavLink to="/dashboard">Dashboard</NavLink></li>
+        <li><NavLink to="/today">Hoy</NavLink></li>
         <li><NavLink to="/workout">Workout</NavLink></li>
         <li className="relative group">
           <span className="cursor-pointer">Nutrition</span>

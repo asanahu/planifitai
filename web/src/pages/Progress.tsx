@@ -28,7 +28,7 @@ export default function ProgressPage() {
         <button className="btn" onClick={() => mutation.mutate()}>Guardar peso</button>
       </div>
       <ul>
-        {entriesQuery.data?.map((e) => (
+        {entriesQuery.data?.map((e: any) => (
           <li key={e.id}>{e.date}: {e.value}kg</li>
         ))}
       </ul>
