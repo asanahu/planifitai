@@ -11,14 +11,16 @@ export default function CaloriesChart() {
     queryFn: () => getSummary(start, end),
   });
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <ComposedChart data={data || []}>
-        <XAxis dataKey="date" hide />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="calories" fill="#82ca9d" />
-        <Line type="monotone" dataKey="target" stroke="#8884d8" />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <div role="img" aria-label="Gráfico de calorías últimos 7 días">
+      <ResponsiveContainer width="100%" height={200}>
+        <ComposedChart data={data || []}>
+          <XAxis dataKey="date" hide />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="calories" fill="#82ca9d" />
+          <Line type="monotone" dataKey="target" stroke="#8884d8" />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

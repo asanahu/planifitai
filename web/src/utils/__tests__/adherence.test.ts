@@ -1,17 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { calcWeekAdherence } from '../adherence';
+import { calcWeekAdherence, type WeekMeal, type WeekWorkout } from '../adherence';
 
 describe('adherence', () => {
-  it('calculates 3/4 as 75%', () => {
-    const active = [true, true, true, true, false, false, false];
-    const workouts = [
-      new Date('2024-05-13'),
-      new Date('2024-05-14'),
-      new Date('2024-05-15'),
+  it('calculates workouts and nutrition adherence', () => {
+    const workouts: WeekWorkout[] = [
+      { planned: true, completed: true },
+      { planned: true, completed: true },
+      { planned: true, completed: false },
+      { planned: true, completed: true },
+      { planned: false, completed: false },
+      { planned: false, completed: false },
+      { planned: false, completed: false },
     ];
-    const res = calcWeekAdherence({ activeDays: active, workoutsDone: workouts });
-    expect(res.countPlanned).toBe(4);
-    expect(res.countDone).toBe(3);
-    expect(res.rate).toBe(75);
+    const meals: WeekMeal[] = [
+      { target: 2000, calories: 1900 },
+      { target: 2000, calories: 2100 },
+      { target: 2000, calories: 1800 },
+      { target: 0, calories: 0 },
+      { target: 2000, calories: 1900 },
+      { target: 2000, calories: 2000 },
+      { target: 0, calories: 0 },
+    ];
+    const res = calcWeekAdherence(workouts, meals);
+    expect(res.workoutsPct).toBe(75);
+    expect(res.nutritionPct).toBe(80);
+    expect(res.overallPct).toBe(78);
   });
 });

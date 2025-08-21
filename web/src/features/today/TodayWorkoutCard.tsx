@@ -4,7 +4,7 @@ import { listProgress } from '../../api/progress';
 import { daysAgo, today } from '../../utils/date';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { pushToast } from '../../components/ui/Toast';
-import { calcWeekAdherence } from '../../utils/adherence';
+import { calcWeekAdherence, type WeekWorkout } from '../../utils/adherence';
 import { Link } from 'react-router-dom';
 import { Dumbbell, Play, CheckCircle, CalendarDays } from 'lucide-react';
 
@@ -65,10 +65,16 @@ export function TodayWorkoutCard() {
     const idx = (new Date(d.date).getDay() + 6) % 7;
     activeDays[idx] = true;
   });
-  const adherence = calcWeekAdherence({
-    activeDays,
-    workoutsDone: (adherenceQuery.data ?? []).map((p) => new Date(p.date)),
-  });
+  const doneSet = new Set(
+    (adherenceQuery.data ?? []).map((p) => (new Date(p.date).getDay() + 6) % 7)
+  );
+  const workouts: WeekWorkout[] = activeDays.map((active, idx) => ({
+    planned: active,
+    completed: active && doneSet.has(idx),
+  }));
+  const adherence = calcWeekAdherence(workouts, []);
+  const planned = workouts.filter((w) => w.planned).length;
+  const done = workouts.filter((w) => w.completed).length;
 
   return (
     <section className="space-y-3 rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
@@ -110,7 +116,7 @@ export function TodayWorkoutCard() {
         <p className="text-sm text-green-600">Día completado</p>
       )}
       <p className="text-sm text-gray-600 dark:text-gray-300">
-        Adherencia semanal: {adherence.countDone}/{adherence.countPlanned} ({adherence.rate}%)
+        Adherencia semanal: {done}/{planned} ({adherence.workoutsPct}%)
       </p>
     </section>
   );
