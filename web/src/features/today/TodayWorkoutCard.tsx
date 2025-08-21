@@ -47,7 +47,14 @@ export function TodayWorkoutCard() {
   if (dayQuery.isLoading) return <Skeleton className="h-40" />;
   const data = dayQuery.data;
   if (!data)
-    return <section className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800">No tienes rutina hoy</section>;
+    return (
+      <section className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
+        <p>No tienes rutina hoy</p>
+        <Link to="/workout/generate" className="mt-2 inline-block rounded bg-blue-500 px-3 py-1 text-sm text-white">
+          Generar plan IA
+        </Link>
+      </section>
+    );
 
   const { routine, day } = data;
   const exercises = day.exercises;

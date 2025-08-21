@@ -18,6 +18,16 @@ export interface Routine {
   days: RoutineDay[];
 }
 
+export interface RoutineCreatePayload {
+  name: string;
+  days: {
+    weekday: number;
+    name: string;
+    duration: number;
+    exercises: { name: string; reps: number; time: number }[];
+  }[];
+}
+
 export function listRoutines() {
   return apiFetch<Routine[]>('/routines');
 }
@@ -52,10 +62,13 @@ export function completeDay(routineId: string, dayId: string) {
   return apiFetch(`/routines/${routineId}/days/${dayId}/complete`, { method: 'POST' });
 }
 
-export async function createRoutineFromAI() {
-  const plan = await apiFetch<unknown>('/ai/generate/workout-plan', { method: 'POST' });
+export function createRoutine(payload: RoutineCreatePayload) {
   return apiFetch<Routine>('/routines', {
     method: 'POST',
-    body: JSON.stringify(plan),
+    body: JSON.stringify(payload),
   });
+}
+
+export function setActiveRoutine(id: string) {
+  return apiFetch(`/routines/${id}`, { method: 'PATCH', body: JSON.stringify({ active: true }) });
 }
