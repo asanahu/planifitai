@@ -18,7 +18,8 @@ export function TodayNutritionCard() {
         <p className="text-sm text-gray-600 dark:text-gray-300">Aún no has registrado comidas</p>
         <Link
           to="/nutrition/today"
-          className="flex h-10 items-center gap-1 rounded bg-blue-500 px-4 text-white"
+          aria-label="Añadir comida"
+          className="flex h-10 items-center gap-1 rounded bg-blue-500 px-4 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <PlusCircle className="h-4 w-4" /> Añadir comida
         </Link>
@@ -44,13 +45,15 @@ export function TodayNutritionCard() {
         </Link>
         <Link
           to="/nutrition/plan"
-          className="flex h-10 items-center gap-1 rounded border px-4"
+          aria-label="Ver plan semanal"
+          className="flex h-10 items-center gap-1 rounded border px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <CalendarDays className="h-4 w-4" /> Ver semana
         </Link>
         <Link
           to="/shopping-list"
-          className="flex h-10 items-center gap-1 rounded border px-4"
+          aria-label="Lista de compra"
+          className="flex h-10 items-center gap-1 rounded border px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <ShoppingCart className="h-4 w-4" /> Lista de compra
         </Link>

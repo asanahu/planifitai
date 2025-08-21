@@ -8,7 +8,7 @@ import { pushToast } from '../../components/ui/Toast';
 export default function GenerateFromAI() {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const useAI = import.meta.env.VITE_USE_AI_WORKOUT_GENERATOR === 'true';
+  const useAI = import.meta.env.VITE_FEATURE_AI === '1';
 
   const fallback: RoutineCreatePayload = {
     name: 'Full Body 3d',

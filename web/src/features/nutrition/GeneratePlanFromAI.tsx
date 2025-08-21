@@ -5,7 +5,7 @@ import { setMealPlan } from '../../utils/storage';
 import { pushToast } from '../../components/ui/Toast';
 
 export default function GeneratePlanFromAI() {
-  const useAI = import.meta.env.VITE_USE_AI_NUTRITION_GENERATOR === 'true';
+  const useAI = import.meta.env.VITE_FEATURE_AI === '1';
   const mutation = useMutation({
     mutationFn: async () => {
       if (!useAI) throw new Error('disabled');

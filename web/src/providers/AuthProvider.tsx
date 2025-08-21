@@ -10,7 +10,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       if (!accessToken && refreshToken) {
         try {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/refresh`, {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token: refreshToken }),

@@ -72,3 +72,7 @@ export function createRoutine(payload: RoutineCreatePayload) {
 export function setActiveRoutine(id: string) {
   return apiFetch(`/routines/${id}`, { method: 'PATCH', body: JSON.stringify({ active: true }) });
 }
+
+export function cloneTemplate(templateId: string) {
+  return apiFetch<Routine>(`/routines/templates/${templateId}/clone`, { method: 'POST' });
+}

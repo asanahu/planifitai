@@ -1,6 +1,6 @@
 import { useAuthStore } from '../features/auth/useAuthStore';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const { accessToken, refreshToken, setTokens, logout } = useAuthStore.getState();
