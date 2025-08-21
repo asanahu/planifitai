@@ -4,11 +4,26 @@ import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import DashboardPage from './pages/Dashboard';
 import ProfileOnboardingPage from './pages/ProfileOnboarding';
+import WorkoutPage from './pages/Workout';
+import WorkoutGeneratePage from './pages/WorkoutGenerate';
+import NutritionTodayPage from './pages/NutritionToday';
+import NutritionPlanPage from './pages/NutritionPlan';
+import ShoppingListPage from './pages/ShoppingList';
+import ProgressPage from './pages/Progress';
+import { Notifications } from './features/notifications/Notifications';
+import Navbar from './components/Navbar';
 import { useAuthStore } from './features/auth/useAuthStore';
 
 function PrivateRoute({ children }: { children: ReactElement }) {
   const { accessToken } = useAuthStore();
-  return accessToken ? children : <Navigate to="/login" />;
+  return accessToken ? (
+    <>
+      <Navbar />
+      {children}
+    </>
+  ) : (
+    <Navigate to="/login" />
+  );
 }
 
 export default function App() {
@@ -19,6 +34,13 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/profile" element={<PrivateRoute><ProfileOnboardingPage /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/workout" element={<PrivateRoute><WorkoutPage /></PrivateRoute>} />
+        <Route path="/workout/generate" element={<PrivateRoute><WorkoutGeneratePage /></PrivateRoute>} />
+        <Route path="/nutrition/today" element={<PrivateRoute><NutritionTodayPage /></PrivateRoute>} />
+        <Route path="/nutrition/plan" element={<PrivateRoute><NutritionPlanPage /></PrivateRoute>} />
+        <Route path="/shopping-list" element={<PrivateRoute><ShoppingListPage /></PrivateRoute>} />
+        <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+        <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>

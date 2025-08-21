@@ -1,3 +1,22 @@
+function format(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function nowInMadrid(): Date {
+  const now = new Date();
+  const tz = now.toLocaleString('en-US', { timeZone: 'Europe/Madrid' });
+  return new Date(tz);
+}
+
 export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return format(nowInMadrid());
+}
+
+export function daysAgo(days: number): string {
+  const d = nowInMadrid();
+  d.setDate(d.getDate() - days);
+  return format(d);
 }

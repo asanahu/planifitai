@@ -3,6 +3,8 @@ import { apiFetch } from './client';
 export interface MealItem {
   id: string;
   name: string;
+  quantity: number;
+  unit: string;
   calories: number;
 }
 
@@ -20,15 +22,53 @@ export interface DayLog {
   calories: number;
 }
 
+export interface Targets {
+  calories: number;
+}
+
+export interface Summary {
+  date: string;
+  calories: number;
+  target?: number;
+}
+
 export function getDayLog(date: string) {
   return apiFetch<DayLog>(`/nutrition?date=${date}`);
 }
 
-export function addMeal(data: { name: string; items: MealItem[] }) {
-  return apiFetch('/nutrition/meal', {
+export function createMeal(date: string, payload: { name: string }) {
+  return apiFetch(`/nutrition/meal?date=${date}`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
+}
+
+export function updateMeal(id: string, payload: { name: string }) {
+  return apiFetch(`/nutrition/meal/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteMeal(id: string) {
+  return apiFetch(`/nutrition/meal/${id}`, { method: 'DELETE' });
+}
+
+export function createMealItem(mealId: string, payload: { name: string; quantity: number; unit: string; calories: number }) {
+  return apiFetch(`/nutrition/meal/${mealId}/items`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updateMealItem(id: string, payload: Partial<{ name: string; quantity: number; unit: string; calories: number }>) {
+  return apiFetch(`/nutrition/meal-items/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteMealItem(id: string) {
+  return apiFetch(`/nutrition/meal-items/${id}`, { method: 'DELETE' });
+}
+
+export function getTargets(date: string) {
+  return apiFetch<Targets>(`/nutrition/targets?date=${date}`);
+}
+
+export function getSummary(start: string, end: string) {
+  return apiFetch<Summary[]>(`/nutrition/summary?start=${start}&end=${end}`);
 }
 
 export function addWater(amount: number) {

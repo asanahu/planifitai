@@ -31,3 +31,15 @@ export function completeExercise(routineId: string, dayId: string, exerciseId: s
     method: 'POST',
   });
 }
+
+export function completeDay(routineId: string, dayId: string) {
+  return apiFetch(`/routines/${routineId}/days/${dayId}/complete`, { method: 'POST' });
+}
+
+export async function createRoutineFromAI() {
+  const plan = await apiFetch<any>('/ai/generate/workout-plan', { method: 'POST' });
+  return apiFetch<Routine>('/routines', {
+    method: 'POST',
+    body: JSON.stringify(plan),
+  });
+}
