@@ -23,6 +23,6 @@ describe('TodayNutritionCard', () => {
         <TodayNutritionCard />
       </MemoryRouter>
     );
-    expect(screen.getByText(/500 \/ 1000 kcal/)).toBeInTheDocument();
+    expect(screen.getByText(/50% del objetivo/)).toBeInTheDocument();
   });
 });

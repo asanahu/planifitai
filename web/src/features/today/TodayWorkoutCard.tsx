@@ -1,13 +1,16 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { getPlannedDayFor, completeDay } from '../../api/routines';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getPlannedDayFor, completeDay, type Routine, type RoutineDay } from '../../api/routines';
 import { listProgress } from '../../api/progress';
 import { daysAgo, today } from '../../utils/date';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { pushToast } from '../../components/ui/Toast';
 import { calcWeekAdherence } from '../../utils/adherence';
+import { Link } from 'react-router-dom';
+import { Dumbbell, Play, CheckCircle, CalendarDays } from 'lucide-react';
 
 export function TodayWorkoutCard() {
   const dateStr = today();
+  const qc = useQueryClient();
   const dayQuery = useQuery({ queryKey: ['routine-day', dateStr], queryFn: () => getPlannedDayFor(new Date(dateStr)) });
   const adherenceQuery = useQuery({
     queryKey: ['workout-progress', dateStr],
@@ -16,16 +19,35 @@ export function TodayWorkoutCard() {
 
   const mutation = useMutation({
     mutationFn: async (ids: { routineId: string; dayId: string }) => completeDay(ids.routineId, ids.dayId),
-    onSuccess: () => {
-      pushToast('Día completado');
-      dayQuery.refetch();
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['routine-day', dateStr] });
+      type RoutineDayData = { routine: Routine; day: RoutineDay };
+      const prev = qc.getQueryData<RoutineDayData>(['routine-day', dateStr]);
+      if (prev) {
+        const updated: RoutineDayData = {
+          ...prev,
+          day: { ...prev.day, exercises: prev.day.exercises.map((e) => ({ ...e, completed: true })) },
+        };
+        qc.setQueryData<RoutineDayData>(['routine-day', dateStr], updated);
+      }
+      return { prev };
     },
-    onError: () => pushToast('Error al completar', 'error'),
+    onError: (_err, _ids, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['routine-day', dateStr], ctx.prev);
+      pushToast('Error al completar', 'error');
+    },
+    onSuccess: () => pushToast('Día completado'),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['routines'] });
+      qc.invalidateQueries({ queryKey: ['routine'] });
+      qc.invalidateQueries({ queryKey: ['workout-progress'] });
+    },
   });
 
-  if (dayQuery.isLoading) return <Skeleton className="h-32" />;
+  if (dayQuery.isLoading) return <Skeleton className="h-40" />;
   const data = dayQuery.data;
-  if (!data) return <section className="border p-4 rounded">No tienes rutina hoy</section>;
+  if (!data)
+    return <section className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800">No tienes rutina hoy</section>;
 
   const { routine, day } = data;
   const exercises = day.exercises;
@@ -42,27 +64,45 @@ export function TodayWorkoutCard() {
   });
 
   return (
-    <section className="border p-4 rounded space-y-2">
-      <h2 className="font-bold">Entrenamiento de hoy</h2>
-      <ul className="space-y-1">
+    <section className="space-y-3 rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
+      <h2 className="flex items-center gap-2 text-lg font-bold">
+        <Dumbbell className="h-5 w-5" /> Entrenamiento de hoy
+      </h2>
+      <p className="text-sm text-gray-600 dark:text-gray-300">Estás a un paso de cumplir tu objetivo 💪</p>
+      <ul className="space-y-1 text-sm">
         {exercises.map((ex) => (
-          <li key={ex.id} className="flex items-center space-x-2">
-            <span className={`w-3 h-3 rounded-full ${ex.completed ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+          <li key={ex.id} className="flex items-center gap-2">
+            <span className={`h-3 w-3 rounded-full ${ex.completed ? 'bg-green-500' : 'bg-gray-300'}`}></span>
             <span>{ex.name}</span>
           </li>
         ))}
       </ul>
-      {allDone ? (
-        <p className="text-sm text-green-600">Día completado</p>
-      ) : (
-        <button
-          onClick={() => mutation.mutate({ routineId: routine.id, dayId: day.id })}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to="/workout"
+          className="flex h-10 items-center gap-1 rounded border px-4 text-sm"
         >
-          Marcar día completado
-        </button>
+          <CalendarDays className="h-4 w-4" /> Ver semana
+        </Link>
+        <Link
+          to="/workout"
+          className="flex h-10 items-center gap-1 rounded bg-blue-500 px-4 text-sm text-white"
+        >
+          <Play className="h-4 w-4" /> Empezar ahora
+        </Link>
+        {!allDone && (
+          <button
+            onClick={() => mutation.mutate({ routineId: routine.id, dayId: day.id })}
+            className="flex h-10 items-center gap-1 rounded bg-green-500 px-4 text-sm text-white"
+          >
+            <CheckCircle className="h-4 w-4" /> Marcar día completado
+          </button>
+        )}
+      </div>
+      {allDone && (
+        <p className="text-sm text-green-600">Día completado</p>
       )}
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         Adherencia semanal: {adherence.countDone}/{adherence.countPlanned} ({adherence.rate}%)
       </p>
     </section>

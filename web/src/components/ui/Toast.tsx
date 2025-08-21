@@ -29,11 +29,11 @@ export function ToastContainer() {
     return () => timers.forEach(clearTimeout);
   }, [toasts, remove]);
   return (
-    <div className="fixed top-4 right-4 space-y-2 z-50">
+    <div className="fixed top-4 right-4 z-50 space-y-2" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`px-4 py-2 rounded text-white ${t.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
+          className={`rounded px-4 py-2 text-white ${t.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
         >
           {t.message}
         </div>
