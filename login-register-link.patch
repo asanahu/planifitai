@@ -1,9 +1,10 @@
-import { LoginForm } from '../features/auth/LoginForm';
-import { Link } from 'react-router-dom';
-
-
-export default function LoginPage() {
-  return (
+--- a/web/src/pages/Login.tsx
++++ b/web/src/pages/Login.tsx
+@@
+ import { LoginForm } from '../features/auth/LoginForm';
++import { Link } from 'react-router-dom';
+@@
+   return (
      <div className="p-4">
        <h1 className="text-2xl mb-4">Login</h1>
        <LoginForm />
@@ -16,5 +17,3 @@ export default function LoginPage() {
        </p>
      </div>
    );
-}
-
