@@ -43,15 +43,18 @@ export default function WorkoutPage() {
             to="/workout/generate"
             role="button"
             aria-label="Generar con IA"
-            className="inline-block min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            tabIndex={0}
+            className="inline-block min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
           >
             Generar con IA
           </Link>
         )}
         <button
+          role="button"
+          tabIndex={0}
           onClick={() => clone.mutate()}
           aria-label="Usar plantilla por defecto"
-          className="inline-block min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-block min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
         >
           Usar plantilla por defecto
         </button>

@@ -2,7 +2,7 @@ import MealsToday from '../features/nutrition/MealsToday';
 
 export default function NutritionTodayPage() {
   return (
-    <div className="p-4">
+    <div className="p-4" data-testid="nutrition-today-page">
       <MealsToday />
     </div>
   );

@@ -1,6 +1,6 @@
 import { useAuthStore } from '../features/auth/useAuthStore';
 
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1';
+const DEMO_MODE = import.meta.env.VITE_DEMO === '1';
 const API_URL = DEMO_MODE ? '' : import.meta.env.VITE_API_BASE_URL;
 
 if (DEMO_MODE) {

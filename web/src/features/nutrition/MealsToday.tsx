@@ -34,7 +34,10 @@ export default function MealsToday() {
         <p>No hay comidas registradas</p>
         <div className="flex gap-2">
           <button
-            className="rounded bg-blue-500 px-4 py-2 text-white"
+            data-testid="add-first-meal"
+            role="button"
+            aria-label="Añadir primera comida"
+            className="rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
             onClick={() => {
               const name = prompt('Nombre de la comida');
               if (name) addMeal.mutate(name);
@@ -44,7 +47,10 @@ export default function MealsToday() {
           </button>
           <Link
             to="/nutrition/plan"
-            className="rounded border px-4 py-2"
+            role="button"
+            aria-label="Plan semanal"
+            tabIndex={0}
+            className="rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
           >
             Plan semanal
           </Link>
@@ -131,7 +137,9 @@ export default function MealsToday() {
         </div>
       ))}
       <button
-        className="h-10 rounded bg-blue-500 px-4 text-white"
+        role="button"
+        aria-label="Añadir comida"
+        className="h-10 rounded bg-blue-500 px-4 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
         onClick={() => {
           const name = prompt('Nombre de la comida');
           if (name) addMeal.mutate(name);

@@ -3,7 +3,7 @@ import DemoBanner from '../components/DemoBanner';
 import { seedDemoData } from '../mocks/handlers';
 import { worker } from '../mocks/server';
 
-const DEMO = import.meta.env.VITE_DEMO_MODE === '1';
+const DEMO = import.meta.env.VITE_DEMO === '1';
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {

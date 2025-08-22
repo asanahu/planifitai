@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listProgress } from '../api/progress';
 import { getSummary } from '../api/nutrition';
 import { today, daysAgo } from '../utils/date';
+import { Link } from 'react-router-dom';
 
 const WeeklyAdherenceChart = lazy(() => import('../features/reports/WeeklyAdherenceChart'));
 const MonthlyProgressChart = lazy(() => import('../features/reports/MonthlyProgressChart'));
@@ -16,7 +17,18 @@ export default function ReportsPage() {
   const nutriQ = useQuery({ queryKey: ['report-nut', start, end], queryFn: () => getSummary(start, end) });
   if ((weightQ.data?.length || 0) === 0 && (nutriQ.data?.length || 0) === 0) {
     return (
-      <div className="p-3">Aún no hay datos para graficar. Registra peso o calorías esta semana</div>
+      <div className="space-y-2 p-3">
+        <p>Aún no hay datos para graficar.</p>
+        <Link
+          to="/today"
+          role="button"
+          aria-label="Ir a hoy"
+          tabIndex={0}
+          className="inline-block rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        >
+          Ir a hoy
+        </Link>
+      </div>
     );
   }
   return (

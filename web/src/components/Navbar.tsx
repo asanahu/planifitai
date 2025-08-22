@@ -2,8 +2,26 @@ import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { listNotifications } from '../api/notifications';
 import { today } from '../utils/date';
+import { useEffect, useState } from 'react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+}
 
 export default function Navbar() {
+  const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallEvt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+  const onInstall = async () => {
+    await installEvt?.prompt();
+    setInstallEvt(null);
+  };
   const todayStr = today();
   const { data } = useQuery({
     queryKey: ['notifications', todayStr],
@@ -48,6 +66,17 @@ export default function Navbar() {
             </span>
           )}
         </li>
+        {installEvt && (
+          <li>
+            <button
+              onClick={onInstall}
+              aria-label="Instalar aplicación"
+              className="px-2 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
+            >
+              Instalar
+            </button>
+          </li>
+        )}
       </ul>
     </nav>
   );

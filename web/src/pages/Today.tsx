@@ -47,7 +47,8 @@ export default function TodayPage() {
               to="/workout/generate"
               role="button"
               aria-label="Crear rutina"
-              className="min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              tabIndex={0}
+              className="min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
             >
               Crear rutina
             </Link>
@@ -55,7 +56,8 @@ export default function TodayPage() {
               to="/nutrition/today"
               role="button"
               aria-label="Añadir comida"
-              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              tabIndex={0}
+              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
             >
               Añadir comida
             </Link>
@@ -63,7 +65,8 @@ export default function TodayPage() {
               to="/progress"
               role="button"
               aria-label="Registrar peso"
-              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              tabIndex={0}
+              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
             >
               Registrar peso
             </Link>
