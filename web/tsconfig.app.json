@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "types": ["vitest", "vite/client"],
+  "types": ["vitest", "vite/client", "node"],
   "include": ["src"],
   "exclude": ["src/features/nutrition/**"]
 }
