@@ -17,6 +17,24 @@ Create a `.env` file based on `.env.example` with the API URL.
 npm run build
 ```
 
+## Deploy
+
+To deploy the web app (e.g. on Vercel or Netlify):
+
+1. Configure environment variables:
+   - `VITE_API_BASE_URL` (required)
+   - `VITE_DEMO_MODE` (optional, set to `1` to enable offline demo with mocked API)
+   - `VITE_FEATURE_AI` (optional)
+   - `VITE_FALLBACK_TEMPLATE_ID` (optional)
+2. Build the project:
+
+```bash
+npm run build
+```
+
+The static output will be generated in the `dist/` folder. Ensure your hosting provider
+is configured for single-page applications so that unknown routes fall back to `index.html`.
+
 ## Onboarding flow & flags
 
 After login, if your profile is incomplete or you have no active routine you will be redirected to an onboarding wizard.

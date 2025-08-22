@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addEntry, getEntries, type ProgressEntry } from '../api/progress';
 import { today, daysAgo } from '../utils/date';
-import WeightChart from '../features/progress/WeightChart';
-import CaloriesChart from '../features/progress/CaloriesChart';
-import WeeklyAdherenceChart from '../features/reports/WeeklyAdherenceChart';
+const WeightChart = lazy(() => import('../features/progress/WeightChart'));
+const CaloriesChart = lazy(() => import('../features/progress/CaloriesChart'));
+const WeeklyAdherenceChart = lazy(() => import('../features/reports/WeeklyAdherenceChart'));
 import { loadAchievements } from '../utils/achievements';
 import AchievementBadge from '../components/AchievementBadge';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -87,12 +87,22 @@ export default function ProgressPage() {
               ))}
             </ul>
           )}
-          <WeightChart />
+          <Suspense fallback={<Skeleton className="h-40" />}>
+            <WeightChart />
+          </Suspense>
         </>
       )}
 
-      {tab === 'calories' && <CaloriesChart />}
-      {tab === 'adherence' && <WeeklyAdherenceChart />}
+      {tab === 'calories' && (
+        <Suspense fallback={<Skeleton className="h-40" />}>
+          <CaloriesChart />
+        </Suspense>
+      )}
+      {tab === 'adherence' && (
+        <Suspense fallback={<Skeleton className="h-40" />}>
+          <WeeklyAdherenceChart />
+        </Suspense>
+      )}
       {tab === 'achievements' && (
         <div className="flex flex-wrap gap-2">
           {achievements.length === 0 && <p className="text-sm">Sin logros aún</p>}

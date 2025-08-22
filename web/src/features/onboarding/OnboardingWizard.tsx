@@ -75,9 +75,20 @@ export function OnboardingWizard() {
           <input type="number" placeholder="Peso" {...form.register('weight', { valueAsNumber: true })} className="w-full border p-2" />
           <input placeholder="Objetivo" {...form.register('goal')} className="w-full border p-2" />
           <input placeholder="Actividad" {...form.register('activity')} className="w-full border p-2" />
-          <button type="submit" className="rounded bg-blue-500 px-4 py-2 text-white">Guardar y continuar</button>
+          <button
+            type="submit"
+            className="rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Guardar y continuar"
+          >
+            Guardar y continuar
+          </button>
         </form>
-        <Link to="/today?skip=1" className="text-sm text-blue-500">
+        <Link
+          to="/today?skip=1"
+          role="button"
+          aria-label="Saltar por ahora"
+          className="text-sm text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
           Saltar por ahora
         </Link>
       </div>
@@ -87,10 +98,25 @@ export function OnboardingWizard() {
   return (
     <div className="space-y-4 p-4">
       <h1 className="text-lg font-semibold">Paso 2: Crea tu plan</h1>
-      <button onClick={createPlan} className="rounded bg-green-500 px-4 py-2 text-white">
-        {import.meta.env.VITE_FEATURE_AI === '1' ? 'Generar con IA' : 'Usar plantilla por defecto'}
+      <button
+        onClick={createPlan}
+        className="rounded bg-green-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        aria-label={
+          import.meta.env.VITE_FEATURE_AI === '1'
+            ? 'Generar con IA'
+            : 'Usar plantilla por defecto'
+        }
+      >
+        {import.meta.env.VITE_FEATURE_AI === '1'
+          ? 'Generar con IA'
+          : 'Usar plantilla por defecto'}
       </button>
-      <Link to="/today?skip=1" className="block text-sm text-blue-500">
+      <Link
+        to="/today?skip=1"
+        role="button"
+        aria-label="Saltar por ahora"
+        className="block text-sm text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
         Saltar por ahora
       </Link>
     </div>

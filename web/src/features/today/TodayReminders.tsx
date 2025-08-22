@@ -53,8 +53,14 @@ export function TodayReminders() {
   if (limited.length === 0) return null;
 
   return (
-    <section className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
-      <h2 className="mb-2 flex items-center gap-2 font-semibold text-lg">
+    <section
+      className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800"
+      aria-labelledby="today-reminders-heading"
+    >
+      <h2
+        id="today-reminders-heading"
+        className="mb-2 flex items-center gap-2 text-lg font-semibold"
+      >
         <Bell className="h-5 w-5" /> Recordatorios de hoy
       </h2>
       <ul className="mb-2 list-disc space-y-1 pl-5 text-sm">
@@ -65,14 +71,18 @@ export function TodayReminders() {
       <div className="flex justify-end gap-4 text-sm">
         {notifQuery.data && notifQuery.data.length > 0 && (
           <button
-            className="text-blue-500"
+            className="text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => markAll.mutate()}
             aria-label="Marcar como visto"
           >
             Marcar como visto
           </button>
         )}
-        <Link className="text-blue-500" to="/notifications">
+        <Link
+          className="text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          to="/notifications"
+          aria-label="Ver todas las notificaciones"
+        >
           Ver todo
         </Link>
       </div>
