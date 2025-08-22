@@ -43,13 +43,28 @@ export default function TodayPage() {
         <div className="space-y-2 rounded border bg-white p-4 shadow-sm dark:bg-gray-800">
           <p>No tienes actividades hoy. ¡Empieza creando tu plan!</p>
           <div className="flex flex-wrap gap-2 text-sm">
-            <Link to="/workout/generate" className="rounded bg-blue-500 px-4 py-2 text-white">
+            <Link
+              to="/workout/generate"
+              role="button"
+              aria-label="Crear rutina"
+              className="min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
               Crear rutina
             </Link>
-            <Link to="/nutrition/today" className="rounded border px-4 py-2">
+            <Link
+              to="/nutrition/today"
+              role="button"
+              aria-label="Añadir comida"
+              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
               Añadir comida
             </Link>
-            <Link to="/progress" className="rounded border px-4 py-2">
+            <Link
+              to="/progress"
+              role="button"
+              aria-label="Registrar peso"
+              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
               Registrar peso
             </Link>
           </div>

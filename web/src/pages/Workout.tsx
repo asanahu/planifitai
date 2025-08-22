@@ -39,13 +39,19 @@ export default function WorkoutPage() {
       <div className="space-y-2 p-3">
         <p>No tienes rutina aún</p>
         {import.meta.env.VITE_FEATURE_AI === '1' && (
-          <Link to="/workout/generate" className="inline-block rounded bg-blue-500 px-4 py-2 text-white">
+          <Link
+            to="/workout/generate"
+            role="button"
+            aria-label="Generar con IA"
+            className="inline-block min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
             Generar con IA
           </Link>
         )}
         <button
           onClick={() => clone.mutate()}
-          className="inline-block rounded border px-4 py-2"
+          aria-label="Usar plantilla por defecto"
+          className="inline-block min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Usar plantilla por defecto
         </button>
