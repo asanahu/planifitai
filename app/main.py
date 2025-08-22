@@ -27,6 +27,7 @@ from app.routers.ai_jobs import router as ai_jobs_router
 from app.routers.training import router as training_router
 from app.routines.routers import router as routines_router
 from app.user_profile.routers import router as profile_router
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,15 @@ def create_app() -> FastAPI:
     # 🔴 Importante: training_router ya tiene prefix="/api/v1/training"
     # Por eso se incluye SIN prefix extra para evitar /api/v1/api/v1/training
     app.include_router(training_router)
-
+    
+    # permitir llamadas desde el frontend durante desarrollo
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],  # origen del servidor de Vite
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     # (Este router ya gestiona sus propias rutas)
     app.include_router(ai_jobs_router)
 
