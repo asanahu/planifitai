@@ -17,3 +17,4 @@ cryptography
 python-multipart
 email-validator
 pytest
+psycopg[binary]
