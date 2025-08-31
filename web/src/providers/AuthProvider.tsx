@@ -10,15 +10,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       if (!accessToken && refreshToken) {
         try {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: refreshToken }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setTokens(data.access_token, refreshToken);
-          }
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        const json = await res.json().catch(() => null);
+        // Si ok es true, usamos json.data.access_token
+        if (res.ok && json?.ok) {
+          setTokens(json.data.access_token, refreshToken);
+        }
         } catch {
           /* ignore */
         }

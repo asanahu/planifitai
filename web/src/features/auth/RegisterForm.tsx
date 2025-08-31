@@ -18,9 +18,10 @@ export function RegisterForm() {
   });
 
   const onSubmit = async (data: FormData) => {
-    const res = await apiRegister(data);
-    setTokens(res.access_token, res.refresh_token);
-    setUser(res.user);
+    const user = await apiRegister({ email: data.email, password: data.password });
+    const tokens = await apiLogin({ username: data.email, password: data.password });
+    setTokens(tokens.access_token, tokens.refresh_token);
+    setUser(user);
   };
 
   return (
