@@ -43,11 +43,13 @@ services:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: planifitai
+      POSTGRES_PASSWORD: planifitai
       POSTGRES_DB: planifitai
     ports:
       - "5432:5432"
+    networks:
+      - internal
   redis:
     image: redis:7-alpine
     ports:
@@ -57,6 +59,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    networks:
+      - internal
   ai:
     build: ./services/ai
     environment:
