@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { login, me } from '../../api/auth';
 import { useAuthStore } from './useAuthStore';
+import { useNavigate } from 'react-router-dom';
 
 const schema = z.object({
   email: z.string().email(),
@@ -16,12 +17,14 @@ export function LoginForm() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+  const navigate = useNavigate();
 
   const onSubmit = async (data: FormData) => {
     const res = await login({ username: data.email, password: data.password });
     setTokens(res.access_token, res.refresh_token);
     const user = await me();
     setUser(user);
+    navigate('/today');
   };
 
   return (
