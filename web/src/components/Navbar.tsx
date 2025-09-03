@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listNotifications } from '../api/notifications';
 import { today } from '../utils/date';
 import { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,6 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function Navbar() {
   const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null);
+  const { logout } = useAuth();
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
@@ -77,6 +79,14 @@ export default function Navbar() {
             </button>
           </li>
         )}
+        <li>
+          <button
+            onClick={logout}
+            className="px-2 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
+          >
+            Logout
+          </button>
+        </li>
       </ul>
     </nav>
   );
