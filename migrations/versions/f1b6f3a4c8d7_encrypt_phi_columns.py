@@ -16,11 +16,11 @@ def upgrade() -> None:
     # Modificamos la tabla user_profiles
     with op.batch_alter_table("user_profiles") as batch_op:
         # Eliminamos las columnas numéricas existentes
-        batch_op.drop_column('weight_kg')
-        batch_op.drop_column('height_cm')
+        batch_op.drop_column("weight_kg")
+        batch_op.drop_column("height_cm")
         # Las volvemos a crear como binario para poder cifrarlas
-        batch_op.add_column(sa.Column('weight_kg', sa.LargeBinary()))
-        batch_op.add_column(sa.Column('height_cm', sa.LargeBinary()))
+        batch_op.add_column(sa.Column("weight_kg", sa.LargeBinary()))
+        batch_op.add_column(sa.Column("height_cm", sa.LargeBinary()))
         # Añadimos la columna medical_conditions también como binaria (nullable)
         batch_op.add_column(
             sa.Column("medical_conditions", sa.LargeBinary(), nullable=True)
