@@ -14,7 +14,8 @@ import ShoppingListPage from './pages/ShoppingList';
 const ProgressPage = lazy(() => import('./pages/Progress'));
 const ReportsPage = lazy(() => import('./pages/Reports'));
 import { Notifications } from './features/notifications/Notifications';
-import Navbar from './components/Navbar';
+import MainNavbar from './components/layout/MainNavbar';
+import LandingPage from './pages/Landing';
 import { useAuthStore } from './features/auth/useAuthStore';
 import { useQuery } from '@tanstack/react-query';
 import { getProfile } from './api/profile';
@@ -34,7 +35,7 @@ function PrivateRoute({ children }: { children: ReactElement }) {
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
   return (
     <>
-      <Navbar />
+      <MainNavbar />
       {children}
     </>
   );
@@ -45,6 +46,7 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<div />}>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/onboarding" element={<PrivateRoute><OnboardingWizard /></PrivateRoute>} />
