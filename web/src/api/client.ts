@@ -7,6 +7,16 @@ if (DEMO_MODE) {
   console.info('Demo mode active - using mocked API');
 }
 
+interface RefreshSuccess {
+  ok: true;
+  data: { access_token: string };
+}
+interface RefreshError {
+  ok: false;
+  error?: { message: string };
+}
+type RefreshData = RefreshSuccess | RefreshError | null;
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const { accessToken, refreshToken, setTokens, logout } = useAuthStore.getState();
   const headers = new Headers(options.headers);
@@ -32,14 +42,14 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, retry
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
-    let refreshData: any = null;
+    let refreshData: RefreshData = null;
     try {
       refreshData = await refreshRes.json();
     } catch {
       // no se pudo parsear
     }
 
-    if (refreshRes.ok && refreshData?.ok) {
+    if (refreshRes.ok && refreshData && refreshData.ok) {
       // Actualizamos el token de acceso usando el valor en refreshData.data.access_token
       setTokens(refreshData.data.access_token, refreshToken);
       // Volvemos a intentar la petición original una sola vez
@@ -47,15 +57,17 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, retry
     }
     // Si no se pudo renovar, cerramos sesión
     logout();
-    throw new Error(refreshData?.error?.message || 'Unauthorized');
+    const msg = refreshData && !refreshData.ok ? refreshData.error?.message : 'Unauthorized';
+    throw new Error(msg || 'Unauthorized');
   }
 
   // Parseamos el cuerpo de la respuesta (si no es 204)
-  let payload: any = null;
+  type Payload<U> = { ok: true; data: U } | { ok: false; error?: { message: string } } | U | string | null;
+  let payload: Payload<T> = null;
   if (res.status !== 204) {
     const text = await res.text();
     try {
-      payload = text ? JSON.parse(text) : null;
+      payload = text ? (JSON.parse(text) as Payload<T>) : null;
     } catch {
       payload = text;
     }
@@ -63,7 +75,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, retry
 
   // Si la respuesta no es exitosa, devolvemos el mensaje de error
   if (!res.ok) {
-    const message = payload?.error?.message || (typeof payload === 'string' ? payload : res.statusText);
+    const message =
+      typeof payload === 'object' && payload && 'error' in payload
+        ? payload.error?.message || res.statusText
+        : typeof payload === 'string'
+        ? payload
+        : res.statusText;
     throw new Error(message);
   }
 
@@ -74,11 +91,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, retry
 
   // Quitamos el envoltorio: si existe la propiedad `ok` y es true, devolvemos payload.data
   if (payload && typeof payload === 'object' && 'ok' in payload) {
-    if (payload.ok) {
-      return payload.data as T;
+    const data = payload as { ok: boolean; data: T; error?: { message: string } };
+    if (data.ok) {
+      return data.data;
     }
     // Si ok es false, lanzamos error con el mensaje
-    throw new Error(payload.error?.message || 'Unknown error');
+    throw new Error(data.error?.message || 'Unknown error');
   }
 
   // Si no hay envoltorio, devolvemos lo recibido

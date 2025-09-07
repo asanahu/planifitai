@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { register as apiRegister } from '../../api/auth';
+import { register as apiRegister, login as apiLogin } from '../../api/auth';
 import { useAuthStore } from './useAuthStore';
 
 const schema = z.object({
