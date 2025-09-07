@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Column, Enum, ForeignKey, Integer, String
+from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -35,5 +35,6 @@ class UserProfile(Base):
     medical_conditions = Column(EncryptedString, nullable=True)
     activity_level = Column(Enum(ActivityLevel))
     goal = Column(Enum(Goal))
+    profile_completed = Column(Boolean, nullable=False, server_default="0")
 
     user = relationship("User", back_populates="profile")

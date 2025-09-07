@@ -32,3 +32,22 @@ class UserProfileRead(UserProfileBase):
     id: int
     user_id: int
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+# === API modelos específicos para /users/me ===
+
+class MeProfileOut(BaseModel):
+    age: int | None = None
+    height_cm: float | None = None
+    weight_kg: float | None = None
+    goal: str | None = None
+    activity_level: str | None = None
+    profile_completed: bool
+
+
+class MeProfileIn(BaseModel):
+    age: int = Field(ge=14, le=100)
+    height_cm: int = Field(ge=120, le=220)
+    weight_kg: float = Field(ge=30, le=300)
+    goal: str = Field(pattern=r"^(lose_weight|maintain|gain_muscle)$")
+    activity_level: str = Field(pattern=r"^(sedentary|light|moderate|active|very_active)$")

@@ -27,6 +27,7 @@ from app.routers.ai_jobs import router as ai_jobs_router
 from app.routers.training import router as training_router
 from app.routines.routers import router as routines_router
 from app.user_profile.routers import router as profile_router
+from app.routers.users import router as users_router
 from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ def create_app() -> FastAPI:
     # Estos routers NO llevan /api/v1 por dentro → se incluye con prefix global
     app.include_router(auth_router, prefix=settings.API_V1_STR)
     app.include_router(profile_router, prefix=settings.API_V1_STR)
+    app.include_router(users_router, prefix=settings.API_V1_STR)
     app.include_router(routines_router, prefix=settings.API_V1_STR)
     app.include_router(progress_router, prefix=settings.API_V1_STR)
     app.include_router(nutrition_router, prefix=settings.API_V1_STR)

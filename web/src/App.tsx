@@ -5,6 +5,7 @@ import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import DashboardPage from './pages/Dashboard';
 import TodayPage from './pages/Today';
+import PerfilPage from './pages/Perfil';
 import OnboardingWizard from './features/onboarding/OnboardingWizard';
 import WorkoutPage from './pages/Workout';
 import WorkoutGeneratePage from './pages/WorkoutGenerate';
@@ -18,21 +19,16 @@ import MainNavbar from './components/layout/MainNavbar';
 import LandingPage from './pages/Landing';
 import { useAuthStore } from './features/auth/useAuthStore';
 import { useQuery } from '@tanstack/react-query';
-import { getProfile } from './api/profile';
-import { getUserRoutines } from './api/routines';
+import { getMe } from './api/users';
 
 function PrivateRoute({ children }: { children: ReactElement }) {
   const { accessToken } = useAuthStore();
   const location = useLocation();
-  const skip = new URLSearchParams(location.search).get('skip') === '1';
-  const profileQuery = useQuery({ queryKey: ['profile'], queryFn: getProfile, enabled: !!accessToken });
-  const routinesQuery = useQuery({ queryKey: ['routines'], queryFn: getUserRoutines, enabled: !!accessToken });
+  const meQuery = useQuery({ queryKey: ['me'], queryFn: getMe, enabled: !!accessToken });
   if (!accessToken) return <Navigate to="/login" />;
-  const needsOnboarding =
-    location.pathname !== '/onboarding' &&
-    !skip &&
-    (profileQuery.data === null || (routinesQuery.data?.length || 0) === 0);
-  if (needsOnboarding) return <Navigate to="/onboarding" replace />;
+  const isProfileRoute = location.pathname === '/perfil';
+  const incomplete = meQuery.data && meQuery.data.profile_completed === false;
+  if (!isProfileRoute && incomplete) return <Navigate to="/perfil" replace />;
   return (
     <>
       <MainNavbar />
@@ -52,6 +48,8 @@ export default function App() {
           <Route path="/onboarding" element={<PrivateRoute><OnboardingWizard /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/today" element={<PrivateRoute><TodayPage /></PrivateRoute>} />
+          <Route path="/hoy" element={<PrivateRoute><TodayPage /></PrivateRoute>} />
+          <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
           <Route path="/workout" element={<PrivateRoute><WorkoutPage /></PrivateRoute>} />
           <Route path="/workout/generate" element={<PrivateRoute><WorkoutGeneratePage /></PrivateRoute>} />
           <Route path="/nutrition/today" element={<PrivateRoute><NutritionTodayPage /></PrivateRoute>} />
@@ -60,7 +58,7 @@ export default function App() {
           <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-          <Route path="*" element={<Navigate to="/today" />} />
+          <Route path="*" element={<Navigate to="/hoy" />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

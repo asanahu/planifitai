@@ -5,7 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from '../../App';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 
-vi.mock('../../api/profile', () => ({ getProfile: vi.fn().mockResolvedValue(null) }));
+vi.mock('../../api/users', () => ({ 
+  getMe: vi.fn().mockResolvedValue({ profile_completed: false }),
+  updateMyProfile: vi.fn().mockResolvedValue({ profile_completed: true })
+}));
 vi.mock('../../api/routines', () => ({
   getUserRoutines: vi.fn().mockResolvedValue([]),
   getPlannedDayFor: vi.fn().mockResolvedValue(null),
@@ -26,13 +29,15 @@ describe('Onboarding guard', () => {
         <App />
       </QueryClientProvider>
     );
-    expect(await screen.findByText(/Paso 1: Completa tu perfil/)).toBeInTheDocument();
+    expect(await screen.findByText(/Completa tu perfil/)).toBeInTheDocument();
   });
 
-  it('allows access when skip query is set', async () => {
+  it('allows access when profile is completed', async () => {
     const qc = new QueryClient();
     useAuthStore.setState({ accessToken: 'demo', refreshToken: 'demo' });
-    window.history.pushState({}, '', '/today?skip=1');
+    window.history.pushState({}, '', '/hoy');
+    // Mock getMe to return completed profile
+    vi.doMock('../../api/users', () => ({ getMe: vi.fn().mockResolvedValue({ profile_completed: true }) }));
     render(
       <QueryClientProvider client={qc}>
         <App />
