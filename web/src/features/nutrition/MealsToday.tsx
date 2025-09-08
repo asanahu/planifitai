@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import {
   getDayLog,
   createMeal,
-  createMealItem,
   deleteMeal,
   deleteMealItem,
   updateMeal,
   updateMealItem,
+  addMealItemFlexible,
 } from '../../api/nutrition';
 import { today } from '../../utils/date';
+import FoodPicker from '../../components/FoodPicker';
 
 export default function MealsToday() {
   const date = today();
@@ -21,9 +22,9 @@ export default function MealsToday() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }),
   });
 
-  const addItem = useMutation({
-    mutationFn: ({ mealId, name, quantity, unit, calories }: any) =>
-      createMealItem(mealId, { name, quantity, unit, calories }),
+  const addItemFlexible = useMutation({
+    mutationFn: ({ mealId, payload }: { mealId: string; payload: any }) =>
+      addMealItemFlexible(mealId, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }),
   });
 
@@ -81,14 +82,18 @@ export default function MealsToday() {
                 className="h-8 px-2"
                 onClick={() => {
                   const name = prompt('Nuevo nombre', meal.name);
-                  if (name) updateMeal(meal.id, { name }).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }));
+                  if (name) updateMeal(meal.id, { name }).then(() =>
+                    qc.invalidateQueries({ queryKey: ['nutrition-day', date] })
+                  );
                 }}
               >
                 Editar
               </button>
               <button
                 className="h-8 px-2"
-                onClick={() => deleteMeal(meal.id).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }))}
+                onClick={() => deleteMeal(meal.id).then(() =>
+                  qc.invalidateQueries({ queryKey: ['nutrition-day', date] })
+                )}
               >
                 Borrar
               </button>
@@ -106,14 +111,20 @@ export default function MealsToday() {
                     onClick={() => {
                       const name = prompt('Nombre', item.name);
                       if (!name) return;
-                      updateMealItem(item.id, { name }).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }));
+                      updateMealItem(item.id, { name }).then(() =>
+                        qc.invalidateQueries({ queryKey: ['nutrition-day', date] })
+                      );
                     }}
                   >
                     Ed
                   </button>
                   <button
                     className="h-8 px-2"
-                    onClick={() => deleteMealItem(item.id).then(() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }))}
+                    onClick={() =>
+                      deleteMealItem(item.id).then(() =>
+                        qc.invalidateQueries({ queryKey: ['nutrition-day', date] })
+                      )
+                    }
                   >
                     Del
                   </button>
@@ -121,19 +132,34 @@ export default function MealsToday() {
               </li>
             ))}
           </ul>
-          <button
-            className="mt-2 h-8 text-blue-500"
-            onClick={() => {
-              const name = prompt('Item');
-              if (!name) return;
-              const quantity = Number(prompt('Cantidad') || '0');
-              const unit = prompt('Unidad') || '';
-              const calories = Number(prompt('kcal') || '0');
-              addItem.mutate({ mealId: meal.id, name, quantity, unit, calories });
-            }}
-          >
-            Añadir item
-          </button>
+          <div className="mt-3">
+            <FoodPicker
+              mealId={meal.id}
+              onAdded={() => qc.invalidateQueries({ queryKey: ['nutrition-day', date] })}
+              onManual={(prefill) => {
+                const name = prefill?.name ?? prompt('Nombre del alimento') ?? '';
+                if (!name) return;
+                const unitRaw = prompt('Unidad (g/ml/unidad)', 'g') || 'g';
+                const qty = Number(prompt('Cantidad', '100') || '100');
+                const kcal = Number(prompt('kcal', '0') || '0');
+                const p = Number(prompt('Proteína (g)', '0') || '0');
+                const c = Number(prompt('Carbohidratos (g)', '0') || '0');
+                const f = Number(prompt('Grasa (g)', '0') || '0');
+                addItemFlexible.mutate({
+                  mealId: String(meal.id),
+                  payload: {
+                    food_name: name,
+                    serving_qty: qty,
+                    serving_unit: unitRaw === 'unidad' ? 'unidad' : unitRaw,
+                    calories_kcal: kcal,
+                    protein_g: p,
+                    carbs_g: c,
+                    fat_g: f,
+                  },
+                });
+              }}
+            />
+          </div>
         </div>
       ))}
       <button
@@ -150,3 +176,4 @@ export default function MealsToday() {
     </div>
   );
 }
+

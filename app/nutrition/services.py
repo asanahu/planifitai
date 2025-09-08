@@ -10,6 +10,8 @@ from app.progress import models as progress_models
 from app.user_profile.models import ActivityLevel, Goal, UserProfile
 
 from . import crud, models, schemas
+from services import food_search
+from services.units import compute_factor, normalize_unit
 
 logger = logging.getLogger(__name__)
 
@@ -231,3 +233,163 @@ def post_daily_summary(db: Session, user_id: int, day: date):
     upsert(progress_models.MetricEnum.water_ml, float(day_log.water_total_ml), "ml")
     db.commit()
     return {"created": created, "updated": updated}
+
+
+# --- MealItem flexible creation ---
+
+
+def _extract_unit_weight_grams(portion_suggestions: Dict | None) -> Decimal | None:
+    if not portion_suggestions:
+        return None
+    # Common keys that might represent grams per unit
+    for key in [
+        "unit_g",
+        "unit_grams",
+        "grams_per_unit",
+        "g_per_unit",
+        "per_unit_g",
+    ]:
+        val = portion_suggestions.get(key)
+        if isinstance(val, (int, float, str)):
+            try:
+                d = Decimal(str(val))
+                if d > 0:
+                    return d
+            except Exception:
+                continue
+    return None
+
+
+def create_meal_item_flexible(
+    db: Session, user_id: int, meal_id: int, payload: schemas.MealItemAddFlexible
+):
+    """Create a meal item supporting either legacy-manual or food-driven inputs.
+
+    Returns a tuple (read_schema, orm_item) where read_schema may include meta fields
+    like factor_used and portion_estimated.
+    """
+    logger = logging.getLogger(__name__)
+
+    # Legacy manual path (fully specified item fields)
+    legacy_complete = (
+        payload.serving_qty is not None
+        and payload.serving_unit is not None
+        and payload.calories_kcal is not None
+        and payload.protein_g is not None
+        and payload.carbs_g is not None
+        and payload.fat_g is not None
+    )
+    if legacy_complete:
+        item = crud.add_meal_item(
+            db,
+            user_id,
+            meal_id,
+            schemas.MealItemCreate(
+                food_id=payload.food_id,  # type: ignore[arg-type]
+                food_name=payload.food_name,
+                serving_qty=payload.serving_qty,
+                serving_unit=payload.serving_unit,
+                calories_kcal=payload.calories_kcal,
+                protein_g=payload.protein_g,
+                carbs_g=payload.carbs_g,
+                fat_g=payload.fat_g,
+                fiber_g=payload.fiber_g,
+                sugar_g=payload.sugar_g,
+                sodium_mg=payload.sodium_mg,
+                order_index=payload.order_index or 0,
+            ),
+        )
+        read = schemas.MealItemRead.model_validate(item)
+        return read, item
+
+    # Flexible food-driven path
+    if not payload.quantity or not payload.unit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="quantity and unit are required for food-driven items",
+        )
+
+    details: schemas.FoodDetails | None = None
+    source_name = None
+    if payload.food_id:
+        details = food_search.get_food(db, payload.food_id)
+        if not details:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Food not found")
+        source_name = details.name
+    else:
+        # query required validated at schema level
+        hits = food_search.search_foods(db, payload.query, page=1, page_size=1)
+        if not hits:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No foods found for query '{payload.query}'",
+            )
+        top = hits[0]
+        details = food_search.get_food(db, top.id)
+        if not details:
+            # Extremely rare, means race; treat as not found
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Food not found")
+        source_name = details.name
+
+    unit_weight = _extract_unit_weight_grams(details.portion_suggestions)
+    fr = compute_factor(payload.quantity, payload.unit, unit_weight_grams=unit_weight)
+
+    def _d(x: float | Decimal | None) -> Decimal:
+        try:
+            return Decimal("0") if x is None else Decimal(str(x))
+        except Exception:
+            return Decimal("0")
+
+    base_cal = _d(details.calories_kcal)
+    base_pro = _d(details.protein_g)
+    base_carb = _d(details.carbs_g)
+    base_fat = _d(details.fat_g)
+
+    calories = (base_cal * fr.factor).quantize(Decimal("0.01"))
+    protein = (base_pro * fr.factor).quantize(Decimal("0.01"))
+    carbs = (base_carb * fr.factor).quantize(Decimal("0.01"))
+    fat = (base_fat * fr.factor).quantize(Decimal("0.01"))
+
+    # Manual override precedence
+    if payload.manual_override:
+        mo = payload.manual_override
+        if mo.calories_kcal is not None:
+            calories = Decimal(str(mo.calories_kcal)).quantize(Decimal("0.01"))
+        if mo.protein_g is not None:
+            protein = Decimal(str(mo.protein_g)).quantize(Decimal("0.01"))
+        if mo.carbs_g is not None:
+            carbs = Decimal(str(mo.carbs_g)).quantize(Decimal("0.01"))
+        if mo.fat_g is not None:
+            fat = Decimal(str(mo.fat_g)).quantize(Decimal("0.01"))
+        logger.info("MealItem manual override applied for meal_id=%s", meal_id)
+
+    if fr.portion_estimated:
+        logger.info(
+            "Unit weight unknown; using estimated portion for meal_id=%s (query=%s food_id=%s)",
+            meal_id,
+            payload.query,
+            payload.food_id,
+        )
+
+    # Persist as snapshot
+    serving_unit = fr.serving_unit
+    serving_qty = Decimal(str(payload.quantity)).quantize(Decimal("0.01"))
+    item_payload = schemas.MealItemCreate(
+        food_id=None,  # keep FK optional (Food uses string id)
+        food_name=source_name,
+        serving_qty=serving_qty,
+        serving_unit=serving_unit,
+        calories_kcal=calories,
+        protein_g=protein,
+        carbs_g=carbs,
+        fat_g=fat,
+        fiber_g=payload.fiber_g,
+        sugar_g=payload.sugar_g,
+        sodium_mg=payload.sodium_mg,
+        order_index=payload.order_index or 0,
+    )
+    item = crud.add_meal_item(db, user_id, meal_id, item_payload)
+    read = schemas.MealItemRead.model_validate(item)
+    read.factor_used = fr.factor.quantize(Decimal("0.0001"))
+    read.portion_estimated = fr.portion_estimated
+    return read, item

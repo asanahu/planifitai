@@ -69,12 +69,12 @@ def delete_meal(
     status_code=status.HTTP_201_CREATED,
 )
 def add_item(
-    payload: schemas.MealItemCreate,
+    payload: schemas.MealItemAddFlexible,
     meal: models.NutritionMeal = Depends(get_owned_meal),
     db: Session = Depends(get_db),
 ):
-    item = crud.add_meal_item(db, meal.user_id, meal.id, payload)
-    return ok(schemas.MealItemRead.model_validate(item), status.HTTP_201_CREATED)
+    read, _ = services.create_meal_item_flexible(db, meal.user_id, meal.id, payload)
+    return ok(read, status.HTTP_201_CREATED)
 
 
 @router.patch("/meal/{meal_id}/items/{item_id}", response_model=schemas.MealItemRead)

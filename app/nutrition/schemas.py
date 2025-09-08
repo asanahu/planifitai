@@ -52,6 +52,9 @@ class MealItemUpdate(BaseModel):
 
 class MealItemRead(MealItemBase):
     id: int
+    # creation meta (not persisted): included in add_item responses
+    factor_used: Decimal | None = None
+    portion_estimated: bool | None = None
 
 
 class MealBase(BaseModel):
@@ -161,3 +164,55 @@ class FoodDetails(FoodHit):
     portion_suggestions: Dict | None = None
     raw_payload: Dict | None = None
     lang: str | None = None
+
+
+# --- Flexible MealItem creation ---
+
+
+class ManualOverride(BaseModel):
+    calories_kcal: Decimal | None = None
+    protein_g: Decimal | None = None
+    carbs_g: Decimal | None = None
+    fat_g: Decimal | None = None
+
+
+class MealItemAddFlexible(BaseModel):
+    # New flexible inputs
+    food_id: str | None = None  # refers to app.nutrition.models.Food.id
+    query: str | None = None
+    quantity: Decimal | None = Field(default=None, gt=0)
+    unit: str | None = None  # accepts g, ml, unidad
+    manual_override: ManualOverride | None = None
+
+    # Legacy manual shape (back-compat)
+    food_name: str | None = None
+    serving_qty: Decimal | None = Field(default=None, gt=0)
+    serving_unit: ServingUnit | None = None
+    calories_kcal: Decimal | None = Field(default=None, ge=0)
+    protein_g: Decimal | None = Field(default=None, ge=0)
+    carbs_g: Decimal | None = Field(default=None, ge=0)
+    fat_g: Decimal | None = Field(default=None, ge=0)
+    fiber_g: Decimal | None = Field(default=None, ge=0)
+    sugar_g: Decimal | None = Field(default=None, ge=0)
+    sodium_mg: Decimal | None = Field(default=None, ge=0)
+    order_index: int | None = None
+
+    @field_validator("food_id")
+    @classmethod
+    def at_least_one_selector(cls, v, info):
+        # Allow legacy full manual payloads (serving + macros)
+        data = info.data
+        legacy_complete = (
+            data.get("serving_qty") is not None
+            and data.get("serving_unit") is not None
+            and data.get("calories_kcal") is not None
+            and data.get("protein_g") is not None
+            and data.get("carbs_g") is not None
+            and data.get("fat_g") is not None
+        )
+        if legacy_complete:
+            return v
+        # For flexible path, require food_id or query
+        if v is None and not data.get("query"):
+            raise ValueError("Either food_id or query is required")
+        return v

@@ -91,3 +91,59 @@ export function createMealPlan(payload: MealPlanCreatePayload) {
 export function getMealPlan(params: { start: string; end: string }) {
   return apiFetch(`/meal-plans?start=${params.start}&end=${params.end}`);
 }
+
+// --- Food search/cache (frontend)
+
+export interface FoodHit {
+  id: string;
+  name: string;
+  brand?: string | null;
+  calories_kcal?: number | null;
+  protein_g?: number | null;
+  carbs_g?: number | null;
+  fat_g?: number | null;
+}
+
+export interface FoodDetails extends FoodHit {
+  source: string;
+  source_id: string;
+  portion_suggestions?: Record<string, unknown> | null;
+}
+
+export function searchFoods(q: string, page = 1, pageSize = 10) {
+  const qs = new URLSearchParams({ q, page: String(page), page_size: String(pageSize) });
+  return apiFetch<FoodHit[]>(`/nutrition/foods/search?${qs.toString()}`);
+}
+
+export function getFoodDetails(foodId: string) {
+  return apiFetch<FoodDetails>(`/nutrition/foods/${foodId}`);
+}
+
+// Flexible item creation: food-driven or manual payloads
+export type AddMealItemFlexible =
+  | {
+      food_id: string;
+      quantity: number;
+      unit: 'g' | 'ml' | 'unidad';
+    }
+  | {
+      // manual legacy-compatible shape
+      food_name: string;
+      serving_qty: number;
+      serving_unit: 'g' | 'ml' | 'unit' | 'unidad';
+      calories_kcal: number;
+      protein_g: number;
+      carbs_g: number;
+      fat_g: number;
+      fiber_g?: number;
+      sugar_g?: number;
+      sodium_mg?: number;
+    };
+
+export function addMealItemFlexible(mealId: string, payload: AddMealItemFlexible) {
+  // normalize unidad -> unit for manual serving_unit if needed
+  const body = 'serving_unit' in payload && payload.serving_unit === 'unidad'
+    ? { ...payload, serving_unit: 'unit' }
+    : payload;
+  return apiFetch(`/nutrition/meal/${mealId}/items`, { method: 'POST', body: JSON.stringify(body) });
+}
