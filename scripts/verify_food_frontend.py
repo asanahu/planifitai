@@ -13,14 +13,14 @@ import re
 from pathlib import Path
 
 ROOT = Path.cwd()
-WEB_SRC = ROOT / 'web' / 'src'
+WEB_SRC = ROOT / "web" / "src"
 
 
 def read_text_safe(p: Path) -> str:
     try:
-        return p.read_text(encoding='utf-8')
+        return p.read_text(encoding="utf-8")
     except Exception:
-        return ''
+        return ""
 
 
 def walk_files(root: Path) -> list[Path]:
@@ -50,20 +50,20 @@ def main():
     all_src_files = walk_files(WEB_SRC)
 
     # 1) Component
-    food_picker = WEB_SRC / 'components' / 'FoodPicker.tsx'
+    food_picker = WEB_SRC / "components" / "FoodPicker.tsx"
     component_found = food_picker.exists()
 
     # 2) Meals wiring
-    meals_today = WEB_SRC / 'features' / 'nutrition' / 'MealsToday.tsx'
-    wired_in_meals = 'FAIL'
+    meals_today = WEB_SRC / "features" / "nutrition" / "MealsToday.tsx"
+    wired_in_meals = "FAIL"
     meals_imports = []
     if meals_today.exists():
         meals_imports = grep_with_lines(re.compile(r"FoodPicker"), meals_today)
         if meals_imports:
-            wired_in_meals = 'PASS'
+            wired_in_meals = "PASS"
 
     # 3) API calls
-    api_nutrition = WEB_SRC / 'api' / 'nutrition.ts'
+    api_nutrition = WEB_SRC / "api" / "nutrition.ts"
     search_call = {"found_in_code": False, "url": None}
     add_item_call = {"found_in_code": False, "url": None}
     search_log = []
@@ -79,23 +79,32 @@ def main():
             add_item_log = a_hits
 
     # 3b) Base URL
-    env_local = ROOT / 'web' / '.env.local'
+    env_local = ROOT / "web" / ".env.local"
     base_url = None
     if env_local.exists():
         m = re.search(r"^VITE_API_BASE_URL=(.*)$", read_text_safe(env_local), re.M)
         if m:
             base_url = m.group(1).strip()
+
     # path-only URL reporting
     def to_path(url: str) -> str:
         try:
             # naive parse to grab pathname
             m = re.match(r"^[a-z]+://[^/]+(?P<path>/.*)$", url)
-            return m.group('path') if m else url
+            return m.group("path") if m else url
         except Exception:
             return url
 
-    search_url = (to_path(base_url + '/nutrition/foods/search') if base_url else '/api/v1/nutrition/foods/search')
-    add_item_url = (to_path(base_url + '/nutrition/meal/{meal_id}/items') if base_url else '/api/v1/nutrition/meal/{meal_id}/items')
+    search_url = (
+        to_path(base_url + "/nutrition/foods/search")
+        if base_url
+        else "/api/v1/nutrition/foods/search"
+    )
+    add_item_url = (
+        to_path(base_url + "/nutrition/meal/{meal_id}/items")
+        if base_url
+        else "/api/v1/nutrition/meal/{meal_id}/items"
+    )
     search_call["url"] = search_url
     add_item_call["url"] = add_item_url
 
@@ -107,29 +116,45 @@ def main():
         if m:
             debounce_ms = int(m.group(1))
     if debounce_ms is None:
-        hook = WEB_SRC / 'hooks' / 'useDebouncedValue.ts'
+        hook = WEB_SRC / "hooks" / "useDebouncedValue.ts"
         if hook.exists():
-            m = re.search(r"export function useDebouncedValue<.*?>\([^,]+,\s*(\d+)\)", read_text_safe(hook))
+            m = re.search(
+                r"export function useDebouncedValue<.*?>\([^,]+,\s*(\d+)\)",
+                read_text_safe(hook),
+            )
             if m:
                 debounce_ms = int(m.group(1))
 
     # 5) UI states & manual fallback
-    ui_states = {"loading": False, "empty": False, "error": False, "manual_fallback": False}
+    ui_states = {
+        "loading": False,
+        "empty": False,
+        "error": False,
+        "manual_fallback": False,
+    }
     ui_evidence = []
     if component_found:
         for i, line in enumerate(read_text_safe(food_picker).splitlines(), 1):
-            if 'Buscando' in line:
+            if "Buscando" in line:
                 ui_states["loading"] = True
-                ui_evidence.append({"file": str(food_picker), "line": i, "text": line.strip()})
-            if 'Sin resultados' in line:
+                ui_evidence.append(
+                    {"file": str(food_picker), "line": i, "text": line.strip()}
+                )
+            if "Sin resultados" in line:
                 ui_states["empty"] = True
-                ui_evidence.append({"file": str(food_picker), "line": i, "text": line.strip()})
-            if 'error de búsqueda' in line:
+                ui_evidence.append(
+                    {"file": str(food_picker), "line": i, "text": line.strip()}
+                )
+            if "error de búsqueda" in line:
                 ui_states["error"] = True
-                ui_evidence.append({"file": str(food_picker), "line": i, "text": line.strip()})
-            if 'Entrada manual' in line:
+                ui_evidence.append(
+                    {"file": str(food_picker), "line": i, "text": line.strip()}
+                )
+            if "Entrada manual" in line:
                 ui_states["manual_fallback"] = True
-                ui_evidence.append({"file": str(food_picker), "line": i, "text": line.strip()})
+                ui_evidence.append(
+                    {"file": str(food_picker), "line": i, "text": line.strip()}
+                )
 
     report = {
         "frontend_audit": {
@@ -140,9 +165,15 @@ def main():
                 "add_item": add_item_call,
             },
             "devtools_network": {
-                "search_typing_manzana": {"requests": 0, "status": [], "debounce_ms": debounce_ms},
+                "search_typing_manzana": {
+                    "requests": 0,
+                    "status": [],
+                    "debounce_ms": debounce_ms,
+                },
             },
-            "fallback_manual_entry": 'PASS' if ui_states.get('manual_fallback') else 'FAIL',
+            "fallback_manual_entry": (
+                "PASS" if ui_states.get("manual_fallback") else "FAIL"
+            ),
             "notes": [],
         }
     }
@@ -153,18 +184,24 @@ def main():
         report["frontend_audit"]["notes"].append(f"Debounce too low: {debounce_ms}ms")
     if debounce_ms is not None and debounce_ms >= 250:
         report["frontend_audit"]["notes"].append(f"Debounce OK: {debounce_ms}ms")
-    if not ui_states.get('loading'):
+    if not ui_states.get("loading"):
         report["frontend_audit"]["notes"].append("Loading state not detected")
-    if not ui_states.get('error'):
+    if not ui_states.get("error"):
         report["frontend_audit"]["notes"].append("Error state not detected")
-    if not ui_states.get('empty'):
+    if not ui_states.get("empty"):
         report["frontend_audit"]["notes"].append("Empty state not detected")
 
     log = {
         "files_scanned": len(all_src_files),
-        "component": {"path": str(food_picker) if component_found else None, "found": component_found},
+        "component": {
+            "path": str(food_picker) if component_found else None,
+            "found": component_found,
+        },
         "meals_today": {"path": str(meals_today), "imports": meals_imports},
-        "api_client": {"path": str(WEB_SRC / 'api' / 'client.ts'), "base_env_key": 'VITE_API_BASE_URL'},
+        "api_client": {
+            "path": str(WEB_SRC / "api" / "client.ts"),
+            "base_env_key": "VITE_API_BASE_URL",
+        },
         "api_routes": {
             "search": search_log,
             "add_item": add_item_log,
@@ -177,5 +214,5 @@ def main():
     print(json.dumps(log, ensure_ascii=False, indent=2))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

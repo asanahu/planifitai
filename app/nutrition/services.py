@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.progress import models as progress_models
 from app.user_profile.models import ActivityLevel, Goal, UserProfile
+from services import food_search
+from services.units import compute_factor
 
 from . import crud, models, schemas
-from services import food_search
-from services.units import compute_factor, normalize_unit
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +314,9 @@ def create_meal_item_flexible(
     if payload.food_id:
         details = food_search.get_food(db, payload.food_id)
         if not details:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Food not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Food not found"
+            )
         source_name = details.name
     else:
         # query required validated at schema level
@@ -328,7 +330,9 @@ def create_meal_item_flexible(
         details = food_search.get_food(db, top.id)
         if not details:
             # Extremely rare, means race; treat as not found
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Food not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Food not found"
+            )
         source_name = details.name
 
     unit_weight = _extract_unit_weight_grams(details.portion_suggestions)

@@ -5,9 +5,8 @@ Revises: e1a1c2d3e4f5
 Create Date: 2025-09-08 00:02:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "2025_09_08_0002"
@@ -36,8 +35,12 @@ def upgrade() -> None:
         sa.Column("portion_suggestions", sa.JSON(), nullable=True),
         sa.Column("raw_payload", sa.JSON(), nullable=True),
         sa.Column("lang", sa.String(length=8), nullable=False, server_default="en"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.UniqueConstraint("source", "source_id", name="uix_food_source_source_id"),
     )
     op.create_index("ix_food_name", "foods", ["name"], unique=False)

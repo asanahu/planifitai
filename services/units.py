@@ -6,7 +6,6 @@ from typing import Optional
 
 from app.nutrition.models import ServingUnit
 
-
 SUPPORTED_UNITS = {"g", "ml", "unit", "unidad"}
 
 
@@ -46,8 +45,12 @@ def compute_factor(
 
     if su in {ServingUnit.g, ServingUnit.ml}:
         # MVP: assume 1 g/ml density equivalence for ml
-        factor = (qty / Decimal("100"))
-        return FactorResult(factor=factor.quantize(Decimal("0.0001")), portion_estimated=False, serving_unit=su)
+        factor = qty / Decimal("100")
+        return FactorResult(
+            factor=factor.quantize(Decimal("0.0001")),
+            portion_estimated=False,
+            serving_unit=su,
+        )
 
     # su == unit
     if unit_weight_grams is not None:
@@ -55,9 +58,16 @@ def compute_factor(
         if uw <= 0:
             raise ValueError("unit_weight_grams must be > 0 when provided")
         factor = (qty * uw) / Decimal("100")
-        return FactorResult(factor=factor.quantize(Decimal("0.0001")), portion_estimated=False, serving_unit=su)
+        return FactorResult(
+            factor=factor.quantize(Decimal("0.0001")),
+            portion_estimated=False,
+            serving_unit=su,
+        )
 
     # Fallback: treat 1 unit as 100 g
     factor = qty  # qty * (100/100)
-    return FactorResult(factor=Decimal(factor).quantize(Decimal("0.0001")), portion_estimated=True, serving_unit=su)
-
+    return FactorResult(
+        factor=Decimal(factor).quantize(Decimal("0.0001")),
+        portion_estimated=True,
+        serving_unit=su,
+    )

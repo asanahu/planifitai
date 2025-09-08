@@ -1,10 +1,11 @@
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext, get_current_user
 from app.core.database import get_db
-from app.core.errors import err, ok
+from app.core.errors import ok
 from app.user_profile import models as profile_models
 from app.user_profile import schemas as profile_schemas
 
@@ -97,10 +98,20 @@ def get_me(
     return ok(
         profile_schemas.MeProfileOut(
             age=profile.age if profile else None,
-            height_cm=float(profile.height_cm) if profile and profile.height_cm is not None else None,
-            weight_kg=float(profile.weight_kg) if profile and profile.weight_kg is not None else None,
+            height_cm=(
+                float(profile.height_cm)
+                if profile and profile.height_cm is not None
+                else None
+            ),
+            weight_kg=(
+                float(profile.weight_kg)
+                if profile and profile.weight_kg is not None
+                else None
+            ),
             goal=_map_goal_db_to_api(profile.goal) if profile else None,
-            activity_level=_map_activity_db_to_api(profile.activity_level) if profile else None,
+            activity_level=(
+                _map_activity_db_to_api(profile.activity_level) if profile else None
+            ),
             profile_completed=completed,
         )
     )
@@ -121,7 +132,9 @@ def put_me_profile(
         goal_db = _map_goal_api_to_db(payload.goal)
         activity_db = _map_activity_api_to_db(payload.activity_level)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        )
 
     if not profile:
         profile = profile_models.UserProfile(
@@ -142,12 +155,14 @@ def put_me_profile(
     return ok(
         profile_schemas.MeProfileOut(
             age=profile.age,
-            height_cm=float(profile.height_cm) if profile.height_cm is not None else None,
-            weight_kg=float(profile.weight_kg) if profile.weight_kg is not None else None,
+            height_cm=(
+                float(profile.height_cm) if profile.height_cm is not None else None
+            ),
+            weight_kg=(
+                float(profile.weight_kg) if profile.weight_kg is not None else None
+            ),
             goal=_map_goal_db_to_api(profile.goal),
             activity_level=_map_activity_db_to_api(profile.activity_level),
             profile_completed=profile.profile_completed,
         )
     )
-
-

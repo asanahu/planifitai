@@ -8,14 +8,15 @@ import requests
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
-from app.nutrition.models import Food, FoodSource
 from app.nutrition import schemas as nutrition_schemas
+from app.nutrition.models import Food, FoodSource
 from services.food_sources import (
     FoodDetails as SourceFoodDetails,
+)
+from services.food_sources import (
     UnsupportedFoodSourceError,
     get_food_source_adapter,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ logger = logging.getLogger(__name__)
 MAX_PAGE_SIZE = 25
 
 
-def _map_details_to_food_entity(details: SourceFoodDetails, existing: Optional[Food] = None) -> Food:
+def _map_details_to_food_entity(
+    details: SourceFoodDetails, existing: Optional[Food] = None
+) -> Food:
     brand = None
     # Try to infer brand from raw_payload (FDC commonly has brandName/brandOwner)
     raw = details.raw_payload or {}
@@ -42,9 +45,13 @@ def _map_details_to_food_entity(details: SourceFoodDetails, existing: Optional[F
     return entity
 
 
-def _ensure_food_from_source(db: Session, source: FoodSource, source_id: str) -> Optional[Food]:
+def _ensure_food_from_source(
+    db: Session, source: FoodSource, source_id: str
+) -> Optional[Food]:
     existing: Food | None = (
-        db.query(Food).filter(Food.source == source, Food.source_id == source_id).first()
+        db.query(Food)
+        .filter(Food.source == source, Food.source_id == source_id)
+        .first()
     )
     if existing:
         return existing
@@ -58,7 +65,9 @@ def _ensure_food_from_source(db: Session, source: FoodSource, source_id: str) ->
         details: SourceFoodDetails = adapter.get_details(source_id)
     except requests.exceptions.HTTPError as he:
         if getattr(he.response, "status_code", None) == 429:
-            logger.info("FDC 429 rate-limited. Skipping external fetch for %s", source_id)
+            logger.info(
+                "FDC 429 rate-limited. Skipping external fetch for %s", source_id
+            )
             return None
         logger.warning("FDC details HTTP error for %s: %s", source_id, he)
         return None
@@ -84,7 +93,9 @@ def _ensure_food_from_source(db: Session, source: FoodSource, source_id: str) ->
     return entity
 
 
-def search_foods(db: Session, query: str, page: int = 1, page_size: int = 10) -> List[nutrition_schemas.FoodHit]:
+def search_foods(
+    db: Session, query: str, page: int = 1, page_size: int = 10
+) -> List[nutrition_schemas.FoodHit]:
     q = (query or "").strip()
     if not q:
         return []

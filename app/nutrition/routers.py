@@ -8,11 +8,11 @@ from app.auth.deps import UserContext, get_current_user
 from app.core.database import get_db
 from app.core.errors import COMMON_HTTP, err, ok
 from app.dependencies import get_owned_meal
+from app.nutrition.schemas import FoodDetails, FoodHit
 from app.user_profile.models import UserProfile
+from services import food_search
 
 from . import crud, models, schemas, services
-from services import food_search
-from app.nutrition.schemas import FoodHit, FoodDetails
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 

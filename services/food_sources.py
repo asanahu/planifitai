@@ -35,11 +35,11 @@ class FoodDetails(BaseModel):
 class FoodSourceAdapter(Protocol):
     """Interface all food source adapters must implement."""
 
-    def search(self, query: str, page: int = 1, page_size: int = 10) -> List[FoodHit]:
-        ...
+    def search(
+        self, query: str, page: int = 1, page_size: int = 10
+    ) -> List[FoodHit]: ...
 
-    def get_details(self, source_id: str) -> FoodDetails:
-        ...
+    def get_details(self, source_id: str) -> FoodDetails: ...
 
 
 class UnsupportedFoodSourceError(RuntimeError):
@@ -207,5 +207,7 @@ def get_food_source_adapter() -> FoodSourceAdapter:
 
     source = (settings.FOOD_SOURCE or "fdc").lower()
     if source != "fdc":
-        raise UnsupportedFoodSourceError(f"Unsupported FOOD_SOURCE: {settings.FOOD_SOURCE}")
+        raise UnsupportedFoodSourceError(
+            f"Unsupported FOOD_SOURCE: {settings.FOOD_SOURCE}"
+        )
     return FdcAdapter(api_key=settings.FDC_API_KEY)

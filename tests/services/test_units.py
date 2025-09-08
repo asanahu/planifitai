@@ -25,4 +25,3 @@ def test_factor_for_unidad_without_known_weight():
     fr = compute_factor(2, "unidad")
     assert fr.factor == Decimal("2.0000")
     assert fr.portion_estimated is True
-

@@ -36,6 +36,7 @@ class UserProfileRead(UserProfileBase):
 
 # === API modelos específicos para /users/me ===
 
+
 class MeProfileOut(BaseModel):
     age: int | None = None
     height_cm: float | None = None
@@ -50,4 +51,6 @@ class MeProfileIn(BaseModel):
     height_cm: int = Field(ge=120, le=220)
     weight_kg: float = Field(ge=30, le=300)
     goal: str = Field(pattern=r"^(lose_weight|maintain|gain_muscle)$")
-    activity_level: str = Field(pattern=r"^(sedentary|light|moderate|active|very_active)$")
+    activity_level: str = Field(
+        pattern=r"^(sedentary|light|moderate|active|very_active)$"
+    )

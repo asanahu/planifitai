@@ -163,4 +163,6 @@ class Food(Base):
     raw_payload = Column(JSON, nullable=True)
     lang = Column(String(8), nullable=False, default="en")
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
