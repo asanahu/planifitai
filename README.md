@@ -114,6 +114,82 @@ uvicorn app.main:app --reload
 ```
 
 En CI mantenerlo en `false`.
+
+## Nutrition Data (MVP)
+
+- Source: USDA FoodData Central (FDC)
+- Goal: query foods by name and fetch canonical macros per 100 g with raw payload for audit
+- Extensibility: adapter interface prepared; BEDCA hook reserved
+
+### Flow
+
+- Router -> Service (Search) -> Adapter (FDC) -> Mapper -> DTO
+
+### Environment Variables
+
+- `FOOD_SOURCE`: active provider key. Default: `fdc`.
+- `FDC_API_KEY`: API key for USDA FDC. Get one at https://fdc.nal.usda.gov/api-key-signup.html
+
+Example `.env` entries:
+
+```
+FOOD_SOURCE=fdc
+FDC_API_KEY=your_fdc_api_key_here
+```
+
+### Endpoints to Try
+
+- Search foods: `GET /api/v1/nutrition/foods/search?q=apple&page=1&page_size=5`
+- Food details: `GET /api/v1/nutrition/foods/{source_id}` (use an `fdcId` from search results)
+
+Both endpoints require authentication like the rest of the nutrition routes.
+
+### Provider Interface and Adapters
+
+- Interface: `services/food_sources.py` → `FoodSourceAdapter.search(query, page, page_size)` and `get_details(source_id)`.
+- Implementation (MVP): `FdcAdapter(FDC_API_KEY)`.
+- BEDCA Hook: `BedcaAdapter()` present but raises `NotImplementedError`.
+- Provider selection: `FOOD_SOURCE=fdc`. Any other value triggers a controlled 501 error.
+
+### Canonical Mapping (per 100 g)
+
+- calories_kcal: FDC nutrient 208 (Energy, kcal) or labelNutrients.calories scaled to 100 g
+- protein_g: FDC nutrient 203 (Protein) or labelNutrients.protein scaled to 100 g
+- carbs_g: FDC nutrient 205 (Carbohydrate, by difference) or labelNutrients.carbohydrate scaled to 100 g
+- fat_g: FDC nutrient 204 (Total lipid (fat)) or labelNutrients.fat scaled to 100 g
+
+Notes:
+- For `foundation`/`srLegacy` data types, `foodNutrients` values are typically per 100 g and used directly.
+- For branded items, if `servingSizeUnit` is grams and `labelNutrients` is available, values are scaled to a 100 g basis.
+- The full upstream payload is included in `raw_payload` for audit/debug.
+
+### Direct FDC Example (for troubleshooting)
+
+- Search (POST):
+
+```
+curl -X POST "https://api.nal.usda.gov/fdc/v1/foods/search?api_key=$FDC_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"apple","pageSize":5,"pageNumber":1}'
+```
+
+- Details (GET):
+
+```
+curl "https://api.nal.usda.gov/fdc/v1/food/1102645?api_key=$FDC_API_KEY"
+```
+
+### Conceptual Test Case
+
+- Query: `apple`
+- Expect top hit to include something like: `Apple, raw, with skin` (dataset dependent)
+- Details should map per 100 g:
+  - calories_kcal ≈ 52
+  - protein_g ≈ 0.26
+  - carbs_g ≈ 13.8
+  - fat_g ≈ 0.17
+- Response also contains `raw_payload` with the original FDC JSON.
+
 ## API Documentation
 
 The API documentation is available at:

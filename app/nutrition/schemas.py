@@ -138,3 +138,26 @@ class SummaryRead(BaseModel):
     totals: MacroTotals
     average: MacroTotals
     adherence: Dict[str, float] | None = None
+
+
+# --- Food search/cache schemas ---
+
+
+class FoodHit(BaseModel):
+    id: str
+    name: str
+    brand: str | None = None
+    calories_kcal: float | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FoodDetails(FoodHit):
+    source: str
+    source_id: str
+    portion_suggestions: Dict | None = None
+    raw_payload: Dict | None = None
+    lang: str | None = None

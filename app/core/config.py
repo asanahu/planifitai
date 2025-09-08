@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Feature flags
     AI_FEATURES_ENABLED: bool = Field(default=False)
 
+    # Nutrition data sources
+    FOOD_SOURCE: str = Field(default="fdc")
+    FDC_API_KEY: str | None = None
+
     # Opcionales (si los usas después)
     OPENAI_API_KEY: str | None = None
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"

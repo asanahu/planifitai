@@ -132,3 +132,35 @@ class NutritionTarget(Base):
     fat_g_target = Column(Numeric(10, 2), nullable=False)
     source = Column(SqlEnum(TargetSource, name="targetsource"), nullable=False)
     method = Column(JSON, nullable=True)
+
+
+class FoodSource(str, enum.Enum):
+    fdc = "fdc"
+    bedca = "bedca"
+
+
+class Food(Base):
+    __tablename__ = "foods"
+    __table_args__ = (
+        UniqueConstraint("source", "source_id", name="uix_food_source_source_id"),
+        Index("ix_food_name", "name"),
+    )
+
+    # Store UUID as string for cross-DB compatibility
+    id = Column(String(36), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    brand = Column(String(255), nullable=True)
+    source = Column(SqlEnum(FoodSource, name="foodsource"), nullable=False)
+    source_id = Column(String(100), nullable=False)
+
+    # canonical per 100 g
+    calories_kcal = Column(Numeric(10, 2), nullable=True)
+    protein_g = Column(Numeric(10, 2), nullable=True)
+    carbs_g = Column(Numeric(10, 2), nullable=True)
+    fat_g = Column(Numeric(10, 2), nullable=True)
+
+    portion_suggestions = Column(JSON, nullable=True)
+    raw_payload = Column(JSON, nullable=True)
+    lang = Column(String(8), nullable=False, default="en")
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

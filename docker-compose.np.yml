@@ -1,0 +1,10 @@
+services:
+  db:
+    ports:
+      - "55432:5432"
+  redis:
+    ports:
+      - "6380:6379"
+  web:
+    ports:
+      - "8000:8000"

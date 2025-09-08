@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Dict
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.deps import UserContext, get_current_user
@@ -11,6 +11,8 @@ from app.dependencies import get_owned_meal
 from app.user_profile.models import UserProfile
 
 from . import crud, models, schemas, services
+from services import food_search
+from app.nutrition.schemas import FoodHit, FoodDetails
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
@@ -195,3 +197,32 @@ def post_daily_summary(
     current_user: UserContext = Depends(get_current_user),
 ):
     return ok(services.post_daily_summary(db, current_user.id, date))
+
+
+# --- External food data search (MVP) ---
+
+
+@router.get("/foods/search", response_model=list[FoodHit])
+def search_foods_endpoint(
+    q: str,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    if page_size > 25:
+        page_size = 25
+    hits = food_search.search_foods(db, q, page=page, page_size=page_size)
+    return ok(hits)
+
+
+@router.get("/foods/{food_id}", response_model=FoodDetails)
+def get_food_details_endpoint(
+    food_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    details = food_search.get_food(db, food_id)
+    if not details:
+        raise HTTPException(status_code=404, detail="Food not found")
+    return ok(details)

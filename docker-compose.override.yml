@@ -1,0 +1,9 @@
+services:
+  db:
+    ports: []
+  redis:
+    ports: []
+  # Keep web port exposed for local testing; change if 8000 is busy
+  web:
+    ports:
+      - "8000:8000"
