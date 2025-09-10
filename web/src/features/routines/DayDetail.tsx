@@ -3,7 +3,7 @@ import { completeExercise, addExerciseToDay } from '../../api/routines';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pushToast } from '../../components/ui/Toast';
 import { useMemo, useState } from 'react';
-import { getExerciseCatalog, getExerciseFilters } from '../../api/exercises';
+import { getExerciseCatalog, getExerciseFilters, getExerciseById } from '../../api/exercises';
 
 interface Props {
   routineId: string;
@@ -18,14 +18,21 @@ function ExerciseRow({
 }: {
   routineId: string;
   dayId: string;
-  ex: { id: string; name: string; completed: boolean; sets?: number; reps?: number; time_seconds?: number; rest_seconds?: number };
+  ex: { id: string; name: string; completed: boolean; catalog_id?: string | number; sets?: number; reps?: number; time_seconds?: number; rest_seconds?: number };
   onComplete: (id: string) => void;
 }) {
-  const { data } = useQuery({
-    queryKey: ['exercise-demo', ex.name],
-    queryFn: () => getExerciseCatalog({ q: ex.name, limit: 1 }),
+  const byId = !!ex.catalog_id;
+  const { data: dataById } = useQuery({
+    queryKey: ['exercise-demo-id', ex.catalog_id],
+    queryFn: () => getExerciseById(ex.catalog_id as string),
+    enabled: byId,
   });
-  const first = data?.items?.[0];
+  const { data: dataByName } = useQuery({
+    queryKey: ['exercise-demo-name', ex.name],
+    queryFn: () => getExerciseCatalog({ q: ex.name, limit: 1 }),
+    enabled: !byId,
+  });
+  const first = (byId ? dataById : dataByName?.items?.[0]) as any;
   const demoUrl = first?.demo_url || null;
   return (
     <li key={ex.id} className="flex items-center justify-between rounded border p-2 gap-3">
@@ -136,7 +143,9 @@ export default function DayDetail({ routineId, day }: Props) {
   return (
     <div className="mt-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold">{new Date(day.date).toDateString()}</h3>
+        <h3 className="font-semibold">
+          {new Date(day.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+        </h3>
         <button
           className="rounded bg-planifit-500 px-3 py-2 text-white text-sm"
           onClick={() => setShowAdder(true)}

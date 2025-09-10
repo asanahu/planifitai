@@ -41,7 +41,7 @@ export default function WeekView({ routine, selected, onSelect }: Props) {
               onClick={() => onSelect(d.date)}
               className={`rounded border p-2 ${selected === d.date ? 'bg-blue-200' : ''}`}
             >
-              {new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })}
+              {new Date(d.date).toLocaleDateString('es-ES', { weekday: 'short' })}
               {isToday && ' *'}
               {completed && ' ✓'}
             </button>

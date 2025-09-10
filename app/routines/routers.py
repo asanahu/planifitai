@@ -137,6 +137,14 @@ def get_exercise_filters(db: Session = Depends(get_db)):
     return ok(services.get_exercise_filters(db))
 
 
+@router.get("/exercise-catalog/{exercise_id}", response_model=ExerciseRead)
+def get_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)):
+    row = db.get(models.ExerciseCatalog, exercise_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+    return ok(ExerciseRead.model_validate(row))
+
+
 @router.get(
     "/{routine_id}",
     response_model=schemas.RoutineRead,

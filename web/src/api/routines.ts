@@ -4,6 +4,7 @@ export interface Exercise {
   id: string;
   name: string;
   completed: boolean;
+  catalog_id?: string | number;
   sets?: number;
   reps?: number;
   time_seconds?: number;
@@ -59,6 +60,7 @@ function adaptRoutine(r: any): Routine {
         id: String(e.id),
         name: e.exercise_name || e.name || 'Exercise',
         completed: !!e.completed,
+        catalog_id: e.exercise_id,
         sets: e.sets,
         reps: e.reps,
         time_seconds: e.time_seconds,
