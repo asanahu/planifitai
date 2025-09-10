@@ -92,16 +92,27 @@ export default function TodayPage() {
       planned: active,
       completed: active && doneSet.has(idx),
     }));
-    const meals: WeekMeal[] = (nutritionWeekQuery.data || []).map((d) => ({
-      target: d.target || 0,
-      calories: d.calories || 0,
-    }));
-    const adh = calcWeekAdherence(workouts, meals);
     const planned = workouts.filter((w) => w.planned).length;
     const done = workouts.filter((w) => w.completed).length;
     sessionsVal = `${done}/${planned}`;
-    adherenceVal = `${adh.overallPct}%`;
-    adhOverall = adh.overallPct;
+    const workoutsPct = planned === 0 ? 0 : Math.round((done / planned) * 100);
+    // Nutrition adherence: soporta dos formatos: lista de días o resumen con adherence
+    let nutritionPct = 0;
+    const nw: any = nutritionWeekQuery.data;
+    if (Array.isArray(nw)) {
+      const meals: WeekMeal[] = nw.map((d: any) => ({ target: d.target || 0, calories: d.calories || 0 }));
+      const adh = calcWeekAdherence(workouts, meals);
+      nutritionPct = adh.nutritionPct;
+      adhOverall = adh.overallPct;
+      adherenceVal = `${adh.overallPct}%`;
+    } else if (nw && typeof nw === 'object' && nw.adherence) {
+      nutritionPct = Math.round(((nw.adherence?.calories ?? 0) * 100));
+      adhOverall = Math.round((workoutsPct + nutritionPct) / 2);
+      adherenceVal = `${adhOverall}%`;
+    } else {
+      adhOverall = workoutsPct;
+      adherenceVal = `${workoutsPct}%`;
+    }
   }
 
   const kcalVal = nutritionQuery.data?.targets?.calories ?? '-';

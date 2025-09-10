@@ -28,6 +28,7 @@ from app.routers.training import router as training_router
 from app.routines.routers import router as routines_router
 from app.user_profile.routers import router as profile_router
 from app.routers.users import router as users_router
+from app.routers.admin import router as admin_router
 from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix=settings.API_V1_STR)
     if settings.AI_FEATURES_ENABLED:
         app.include_router(ai_router, prefix=settings.API_V1_STR)
+    app.include_router(admin_router, prefix=settings.API_V1_STR)
 
     # 🔴 Importante: training_router ya tiene prefix="/api/v1/training"
     # Por eso se incluye SIN prefix extra para evitar /api/v1/api/v1/training

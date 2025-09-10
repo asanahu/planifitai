@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     OPENROUTER_HTTP_REFERER: str | None = None
     OPENROUTER_APP_TITLE: str | None = None
 
+    # Wger API
+    WGER_API_TOKEN: str | None = None
+
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
 

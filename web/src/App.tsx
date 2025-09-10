@@ -12,6 +12,8 @@ import WorkoutGeneratePage from './pages/WorkoutGenerate';
 import NutritionTodayPage from './pages/NutritionToday';
 import NutritionPlanPage from './pages/NutritionPlan';
 import ShoppingListPage from './pages/ShoppingList';
+import ExerciseCatalogPage from './pages/ExerciseCatalog';
+import AdminImportPage from './pages/AdminImport';
 const ProgressPage = lazy(() => import('./pages/Progress'));
 const ReportsPage = lazy(() => import('./pages/Reports'));
 import { Notifications } from './features/notifications/Notifications';
@@ -51,6 +53,7 @@ export default function App() {
           <Route path="/hoy" element={<PrivateRoute><TodayPage /></PrivateRoute>} />
           <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
           <Route path="/workout" element={<PrivateRoute><WorkoutPage /></PrivateRoute>} />
+          <Route path="/exercises" element={<PrivateRoute><ExerciseCatalogPage /></PrivateRoute>} />
           <Route path="/workout/generate" element={<PrivateRoute><WorkoutGeneratePage /></PrivateRoute>} />
           <Route path="/nutrition/today" element={<PrivateRoute><NutritionTodayPage /></PrivateRoute>} />
           <Route path="/nutrition/plan" element={<PrivateRoute><NutritionPlanPage /></PrivateRoute>} />
@@ -58,6 +61,7 @@ export default function App() {
           <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+          <Route path="/admin/import" element={<PrivateRoute><AdminImportPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/hoy" />} />
         </Routes>
       </Suspense>

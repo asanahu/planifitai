@@ -6,6 +6,7 @@ import { today } from '../../utils/date';
 import { useEffect, useState } from 'react';
 import Button from '../ui/button';
 import { getMe } from '../../api/users';
+const ADMIN_ENABLED = !!import.meta.env.VITE_ADMIN_SECRET;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -62,6 +63,14 @@ export default function MainNavbar() {
                 Workout
               </NavLink>
               <NavLink
+                to="/exercises"
+                aria-disabled={!me?.profile_completed}
+                title={!me?.profile_completed ? 'Completa tu perfil para continuar' : undefined}
+                className={`px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500 ${!me?.profile_completed ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Ejercicios
+              </NavLink>
+              <NavLink
                 to="/nutrition/today"
                 aria-disabled={!me?.profile_completed}
                 title={!me?.profile_completed ? 'Completa tu perfil para continuar' : undefined}
@@ -110,6 +119,11 @@ export default function MainNavbar() {
                 <Button onClick={onInstall} aria-label="Instalar aplicación" variant="ghost">
                   Instalar
                 </Button>
+              )}
+              {ADMIN_ENABLED && (
+                <NavLink className="px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500" to="/admin/import">
+                  Admin
+                </NavLink>
               )}
               <Button onClick={logout} variant="ghost">
                 Logout

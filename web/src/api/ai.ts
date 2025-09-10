@@ -24,12 +24,16 @@ export function generateWorkoutPlanAI(
     days_per_week: number;
     equipment: string;
     preferences: Record<string, string>;
+    preferred_days: number[]; // 0=Lunes..6=Domingo
+    injuries: string[];
   }> = {}
 ) {
   const body = {
     days_per_week: payload.days_per_week ?? payload.days ?? 3,
     equipment: payload.equipment,
     preferences: payload.preferences,
+    preferred_days: payload.preferred_days,
+    injuries: payload.injuries,
   };
   return apiFetch<AiWorkoutPlanJSON>('/ai/generate/workout-plan', {
     method: 'POST',

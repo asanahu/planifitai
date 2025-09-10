@@ -131,6 +131,12 @@ def get_exercise_catalog(
     )
 
 
+@router.get("/exercise-filters")
+def get_exercise_filters(db: Session = Depends(get_db)):
+    """Distinct lists for filtering: equipment and muscles."""
+    return ok(services.get_exercise_filters(db))
+
+
 @router.get(
     "/{routine_id}",
     response_model=schemas.RoutineRead,

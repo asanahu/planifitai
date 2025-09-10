@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 from fastapi import HTTPException, status
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, cast, String
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.deps import UserContext
@@ -34,6 +34,8 @@ def list_exercises(
     if q:
         pattern = f"%{q.lower()}%"
         search_cols = [func.lower(Exercise.name)]
+        if hasattr(Exercise, "description"):
+            search_cols.append(func.lower(getattr(Exercise, "description")))
         if hasattr(Exercise, "pattern"):
             search_cols.append(func.lower(getattr(Exercise, "pattern")))
         if hasattr(Exercise, "tags"):
@@ -49,7 +51,10 @@ def list_exercises(
         if muscle_col is not None:
             coltype = muscle_col.type.__class__.__name__.lower()
             if "array" in coltype or "json" in coltype:
-                where_clauses.append(muscle_col.contains([muscle]))
+                # Hacemos búsqueda textual para mayor compatibilidad entre SQLite/Postgres
+                where_clauses.append(
+                    func.lower(cast(muscle_col, String)).like(f"%{muscle.lower()}%")
+                )
             else:
                 where_clauses.append(func.lower(muscle_col).like(f"%{muscle.lower()}%"))
 
@@ -59,13 +64,27 @@ def list_exercises(
         )
 
     if level:
-        level_col = None
-        for attr in ["level", "difficulty", "description"]:
-            if hasattr(Exercise, attr):
-                level_col = getattr(Exercise, attr)
-                break
+        # Filtramos solo si existe una columna/atributo claro de nivel
+        level_col = getattr(Exercise, "level", None)
         if level_col is not None:
-            where_clauses.append(func.lower(level_col) == level.lower())
+            lvl = level.lower()
+            # Normaliza sinónimos (EN/ES)
+            base_map = {
+                "advanced": "expert",
+                "advance": "expert",
+                "avanzado": "expert",
+                "experto": "expert",
+                "principiante": "beginner",
+                "intermedio": "intermediate",
+            }
+            lvl = base_map.get(lvl, lvl)
+            # Acepta variantes EN y ES en DB
+            variants = {
+                "expert": ["expert", "experto", "advanced", "avanzado"],
+                "beginner": ["beginner", "principiante"],
+                "intermediate": ["intermediate", "intermedio"],
+            }.get(lvl, [lvl])
+            where_clauses.append(func.lower(level_col).in_([v.lower() for v in variants]))
 
     if where_clauses:
         stmt = stmt.where(and_(*where_clauses))
@@ -98,6 +117,36 @@ def get_routine(db: Session, routine_id: int, user: UserContext):
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
     return routine
+
+
+def get_exercise_filters(db: Session) -> dict:
+    """Return distinct equipment and muscle groups from the catalog.
+
+    Uses simple scanning to ensure cross-dialect compatibility.
+    """
+    Exercise = getattr(models, "ExerciseCatalog")
+    equipments: set[str] = set()
+    muscles: set[str] = set()
+    rows = (
+        db.query(Exercise.equipment, Exercise.muscle_groups)
+        .limit(5000)
+        .all()
+    )
+    for eq, mg in rows:
+        if eq:
+            equipments.add(str(eq))
+        if mg:
+            try:
+                for m in mg:
+                    if m:
+                        muscles.add(str(m))
+            except TypeError:
+                # fallback if stored as string
+                muscles.add(str(mg))
+    return {
+        "equipment": sorted(equipments),
+        "muscles": sorted(muscles),
+    }
 
 
 def get_routines_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 20):

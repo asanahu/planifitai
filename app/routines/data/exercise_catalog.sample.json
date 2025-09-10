@@ -1,0 +1,27 @@
+[
+  {
+    "name": "push up",
+    "bodyPart": "chest",
+    "target": "pectorals",
+    "equipment": "body weight",
+    "gifUrl": "https://example.com/pushup.gif",
+    "secondaryMuscles": ["triceps"]
+  },
+  {
+    "name": "squat",
+    "bodyPart": "legs",
+    "target": "quadriceps",
+    "equipment": "body weight",
+    "gifUrl": "https://example.com/squat.gif",
+    "secondaryMuscles": ["glutes"]
+  },
+  {
+    "name": "dumbbell row",
+    "bodyPart": "back",
+    "target": "lats",
+    "equipment": "dumbbell",
+    "gifUrl": "https://example.com/row.gif",
+    "secondaryMuscles": ["biceps"]
+  }
+]
+

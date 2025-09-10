@@ -33,6 +33,9 @@ class WorkoutPlanRequest(BaseModel):
     days_per_week: int = 3
     equipment: Optional[str] = None
     preferences: Optional[Dict[str, str]] = None
+    # Nuevos campos opcionales para personalización adicional
+    preferred_days: Optional[List[int]] = None  # 0=Lunes .. 6=Domingo
+    injuries: Optional[List[str]] = None
 
 
 # --- Nutrition plan ---------------------------------------------------------

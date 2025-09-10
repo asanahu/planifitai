@@ -1,6 +1,11 @@
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+try:
+    # Pydantic v2: AliasChoices allows multiple aliases
+    from pydantic import AliasChoices  # type: ignore
+except Exception:  # pragma: no cover
+    AliasChoices = None  # type: ignore
 
 
 class ExerciseRead(BaseModel):
@@ -8,9 +13,10 @@ class ExerciseRead(BaseModel):
 
     id: int | str
     name: str = Field(description="Nombre del ejercicio", examples=["Push Up"])
+    description: Optional[str] = Field(default=None, description="Descripción corta")
     muscle_groups: List[str] = Field(
         default_factory=list,
-        validation_alias="category",
+        validation_alias=(AliasChoices("muscle_groups", "category") if AliasChoices else "category"),
         description="Grupo(s) muscular(es)",
         examples=[["chest", "triceps"]],
     )
@@ -19,7 +25,7 @@ class ExerciseRead(BaseModel):
     )
     level: Optional[str] = Field(
         default=None,
-        validation_alias="description",
+        validation_alias=(AliasChoices("level", "description") if AliasChoices else "description"),
         description="Nivel de dificultad",
         examples=["beginner"],
     )

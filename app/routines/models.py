@@ -67,6 +67,11 @@ class ExerciseCatalog(Base):
     category = Column(String(50), nullable=True)
     equipment = Column(String(100), nullable=True)
     description = Column(Text, nullable=True)
+    # Campos añadidos para enriquecer catálogo y filtros
+    level = Column(String(20), nullable=True)
+    muscle_groups = Column(JSON, nullable=True)  # p.ej. ["chest", "triceps"]
+    media_url = Column(String(255), nullable=True)  # imagen principal
+    demo_url = Column(String(255), nullable=True)  # video o gif demostrativo
 
 
 class RoutineExercise(Base):

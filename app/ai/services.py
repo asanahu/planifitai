@@ -51,17 +51,38 @@ def generate_workout_plan(
     """Generate a workout plan via AI or return a deterministic stub when simulating."""
     from app.core.config import settings as _settings  # local import to avoid cycles
     if simulate or not _settings.OPENROUTER_KEY:
-        day = schemas.WorkoutPlanDay(
-            weekday="monday",
-            focus="full body",
-            exercises=[
-                schemas.WorkoutExercise(name="push up", sets=3, reps=10, rest_sec=60),
-            ],
-        )
+        def _weekday_name(idx: int) -> str:
+            names = [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+                "sunday",
+            ]
+            return names[max(0, min(6, idx))]
+
+        chosen = req.preferred_days or list(range(req.days_per_week))
+        days: list[schemas.WorkoutPlanDay] = []
+        count = max(1, req.days_per_week)
+        for i in range(count):
+            wd = chosen[i % len(chosen)] if chosen else i
+            days.append(
+                schemas.WorkoutPlanDay(
+                    weekday=_weekday_name(wd),
+                    focus="full body",
+                    exercises=[
+                        schemas.WorkoutExercise(
+                            name="push up", sets=3, reps=10, rest_sec=60
+                        ),
+                    ],
+                )
+            )
         return schemas.WorkoutPlan(
             name="Plan",
             days_per_week=req.days_per_week,
-            days=[day],
+            days=days,
             constraints={},
             total_time_min=45,
         )
@@ -71,10 +92,16 @@ def generate_workout_plan(
         "Eres PlanifitAI, un asistente de fitness. Devuelve únicamente JSON válido, sin explicaciones. "
         "Esquema: {name: str, days_per_week: int, days: [{weekday: str, focus?: str, exercises: [{name: str, sets: int, reps: int, rest_sec?: int, notes?: str}]}], constraints?: {str:str}, total_time_min?: int}."
     )
+    preferred_days_txt = (
+        ", ".join(str(d) for d in (req.preferred_days or [])) if req.preferred_days else None
+    )
+    injuries_txt = ", ".join(req.injuries or []) if req.injuries else None
     user_prompt = (
         f"Genera un plan de entrenamiento personalizado en español. Días/semana: {req.days_per_week}. "
         f"Equipo disponible: {req.equipment or 'ninguno'}. Preferencias: {req.preferences or {}}. "
-        "No devuelvas texto fuera del JSON."
+        + (f"Días preferidos (0=lunes..6=domingo): [{preferred_days_txt}]. " if preferred_days_txt else "")
+        + (f"Lesiones/restricciones: {injuries_txt}. " if injuries_txt else "")
+        + "No devuelvas texto fuera del JSON."
     )
     resp = client.chat(
         user.id,
