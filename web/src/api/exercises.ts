@@ -40,3 +40,7 @@ export function getExerciseCatalog(params: ExerciseCatalogParams = {}) {
 export function getExerciseFilters() {
   return apiFetch<{ equipment: string[]; muscles: string[] }>(`/routines/exercise-filters`);
 }
+
+export function getExerciseById(id: string | number) {
+  return apiFetch<ExerciseItem>(`/routines/exercise-catalog/${id}`);
+}
