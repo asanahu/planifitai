@@ -29,6 +29,7 @@ export interface RoutineCreatePayload {
     weekday: number;
     name?: string;
     duration?: number;
+    equipment?: string[];
     exercises: { name: string; reps?: number; sets?: number; time?: number }[];
   }[];
 }
@@ -90,22 +91,56 @@ export async function getPlannedDayFor(date: Date) {
   for (const routine of routines) {
     const day = routine.days.find((d) => d.date === target);
     if (day) {
-      return { routine, day };
+      // Compute next upcoming session within the current week
+      const future = routine.days
+        .map((d) => d.date)
+        .filter((d) => d > target)
+        .sort();
+      const next = future[0];
+      return { routine, day, next, isFallback: false } as any;
     }
+  }
+  // Fallback: return the latest routine with its first day so Today can show progress/adherence
+  if (routines.length > 0) {
+    const routine = routines[routines.length - 1];
+    // Determine next session: first day in the future this week, otherwise the earliest day next week
+    const days = routine.days.map((d) => d.date).sort();
+    const future = days.filter((d) => d > target);
+    let next = future[0] || days[0] || undefined;
+    // If next is in the past (no future days), we consider it next week (add +7d when presenting)
+    return { routine, day: undefined, next, isFallback: true } as any;
   }
   return null;
 }
 
-export function completeExercise(routineId: string, dayId: string, exerciseId: string) {
-  const body = JSON.stringify({ timestamp: new Date().toISOString() });
+export function completeExercise(routineId: string, dayId: string, exerciseId: string, dayDate?: string) {
+  const ts = dayDate ? `${dayDate}T00:00:00Z` : new Date().toISOString();
+  const body = JSON.stringify({ timestamp: ts });
   return apiFetch(`/routines/${routineId}/days/${dayId}/exercises/${exerciseId}/complete`, {
     method: 'POST',
     body,
   });
 }
 
-export function completeDay(routineId: string, dayId: string) {
-  return apiFetch(`/routines/${routineId}/days/${dayId}/complete`, { method: 'POST' });
+export function completeDay(routineId: string, dayId: string, dayDate?: string) {
+  const body = dayDate ? JSON.stringify({ timestamp: `${dayDate}T00:00:00Z` }) : undefined;
+  return apiFetch(`/routines/${routineId}/days/${dayId}/complete`, { method: 'POST', body });
+}
+
+export function uncompleteDay(routineId: string, dayId: string, dayDate?: string) {
+  const opts: RequestInit = { method: 'POST' };
+  if (dayDate) {
+    opts.body = JSON.stringify({ date: dayDate });
+  }
+  return apiFetch(`/routines/${routineId}/days/${dayId}/uncomplete`, opts);
+}
+
+export function uncompleteExercise(routineId: string, dayId: string, exerciseId: string, dayDate?: string) {
+  const body = JSON.stringify({ timestamp: dayDate ? `${dayDate}T00:00:00Z` : new Date().toISOString() });
+  return apiFetch(`/routines/${routineId}/days/${dayId}/exercises/${exerciseId}/uncomplete`, {
+    method: 'POST',
+    body,
+  });
 }
 
 export function createRoutine(payload: RoutineCreatePayload) {
@@ -115,6 +150,7 @@ export function createRoutine(payload: RoutineCreatePayload) {
     days: payload.days.map((d, i) => ({
       weekday: d.weekday,
       order_index: i,
+      equipment: d.equipment,
       exercises: d.exercises.map((ex, j) => ({
         exercise_name: ex.name,
         sets: ex.sets ?? 3,
@@ -137,6 +173,17 @@ export function setActiveRoutine(_id: string) {
 
 export function cloneTemplate(templateId: string) {
   return apiFetch<Routine>(`/routines/templates/${templateId}/clone`, { method: 'POST' });
+}
+
+export function updateRoutineDay(
+  routineId: string | number,
+  dayId: string | number,
+  payload: Partial<{ equipment: string[]; weekday: number; order_index: number }>
+) {
+  return apiFetch<RoutineDay>(`/routines/${routineId}/days/${dayId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function addExerciseToDay(

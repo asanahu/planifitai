@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import date
+from datetime import date, timedelta
 from datetime import time as dt_time
 from typing import List, Literal
 
@@ -21,6 +21,7 @@ from app.services import adherence as adherence_services
 from app.utils.datetimes import week_bounds
 
 from . import models, schemas, services
+from app.progress import models as progress_models
 
 router = APIRouter(prefix="/routines", tags=["routines"])
 logger = logging.getLogger(__name__)
@@ -42,11 +43,48 @@ def read_routines(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    return ok(
-        services.get_routines_by_user(
-            db=db, user_id=current_user.id, skip=skip, limit=limit
-        )
+    routines = services.get_routines_by_user(
+        db=db, user_id=current_user.id, skip=skip, limit=limit
     )
+    # Compute completed flag per exercise/day using completions + progress entries
+    week_start, week_end = week_bounds("this_week", "Europe/Madrid")
+    done_dates = {
+        d[0]
+        for d in db.query(progress_models.ProgressEntry.date)
+        .filter(
+            progress_models.ProgressEntry.user_id == current_user.id,
+            progress_models.ProgressEntry.metric == progress_models.MetricEnum.workout,
+            progress_models.ProgressEntry.date >= week_start,
+            progress_models.ProgressEntry.date <= week_end,
+        )
+        .all()
+    }
+    from .models import RoutineExerciseCompletion
+    # Preload exercise completions for the week
+    ce_rows = (
+        db.query(RoutineExerciseCompletion.routine_exercise_id, RoutineExerciseCompletion.date)
+        .filter(
+            RoutineExerciseCompletion.user_id == current_user.id,
+            RoutineExerciseCompletion.date >= week_start,
+            RoutineExerciseCompletion.date <= week_end,
+        )
+        .all()
+    )
+    ce_map = {}
+    for ex_id, d in ce_rows:
+        ce_map.setdefault(d, set()).add(ex_id)
+    for r in routines:
+        for day in r.days:
+            day_date = week_start + timedelta(days=day.weekday)
+            # If day-level done, all exercises completed
+            if day_date in done_dates:
+                for ex in day.exercises:
+                    setattr(ex, "completed", True)
+            else:
+                completed_ex_ids = ce_map.get(day_date, set())
+                for ex in day.exercises:
+                    setattr(ex, "completed", ex.id in completed_ex_ids)
+    return ok(routines)
 
 
 @router.get("/templates", response_model=List[schemas.RoutineRead])
@@ -249,6 +287,41 @@ def read_routine(
             "duration_ms": duration_ms,
         },
     )
+
+    # Mark per-exercise completion using completions + progress entries in selected range
+    done_dates = {
+        d[0]
+        for d in db.query(progress_models.ProgressEntry.date)
+        .filter(
+            progress_models.ProgressEntry.user_id == routine.owner_id,
+            progress_models.ProgressEntry.metric == progress_models.MetricEnum.workout,
+            progress_models.ProgressEntry.date >= start_date,
+            progress_models.ProgressEntry.date <= end_date,
+        )
+        .all()
+    }
+    from .models import RoutineExerciseCompletion
+    ce_rows = (
+        db.query(RoutineExerciseCompletion.routine_exercise_id, RoutineExerciseCompletion.date)
+        .filter(
+            RoutineExerciseCompletion.user_id == routine.owner_id,
+            RoutineExerciseCompletion.date >= start_date,
+            RoutineExerciseCompletion.date <= end_date,
+        )
+        .all()
+    )
+    ce_map = {}
+    for ex_id, d in ce_rows:
+        ce_map.setdefault(d, set()).add(ex_id)
+    for day in routine.days:
+        day_date = start_date + timedelta(days=day.weekday)
+        if day_date in done_dates:
+            for ex in day.exercises:
+                setattr(ex, "completed", True)
+        else:
+            completed_ex_ids = ce_map.get(day_date, set())
+            for ex in day.exercises:
+                setattr(ex, "completed", ex.id in completed_ex_ids)
 
     routine_data = schemas.RoutineRead.model_validate(routine)
     routine_data.adherence = adherence
@@ -453,9 +526,10 @@ def schedule_notifications(
 
 @router.post(
     "/{routine_id}/days/{day_id}/exercises/{exercise_id}/complete",
-    response_model=progress_schemas.ProgressEntryRead,
 )
 def complete_exercise(
+    routine_id: int,
+    day_id: int,
     exercise_id: int,
     payload: schemas.CompleteExerciseRequest,
     routine: models.Routine = Depends(get_owned_routine),
@@ -467,3 +541,67 @@ def complete_exercise(
             db=db, exercise_id=exercise_id, user=current_user, payload=payload
         )
     )
+
+
+@router.post(
+    "/{routine_id}/days/{day_id}/exercises/{exercise_id}/uncomplete",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def uncomplete_exercise(
+    routine_id: int,
+    day_id: int,
+    exercise_id: int,
+    payload: schemas.CompleteExerciseRequest | None,
+    routine: models.Routine = Depends(get_owned_routine),
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    date_val = (payload.timestamp.date() if payload else date.today())
+    services.uncomplete_exercise(db=db, exercise_id=exercise_id, user=current_user, date_val=date_val)
+    return
+
+
+@router.post(
+    "/{routine_id}/days/{day_id}/complete",
+    response_model=progress_schemas.ProgressEntryRead,
+)
+def complete_day(
+    routine_id: int,
+    day_id: int,
+    payload: schemas.CompleteExerciseRequest | None = None,
+    routine: models.Routine = Depends(get_owned_routine),
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    date_override = payload.timestamp.date() if payload else None
+    return ok(
+        services.complete_day(
+            db=db,
+            routine_id=routine_id,
+            day_id=day_id,
+            user=current_user,
+            date_override=date_override,
+        )
+    )
+
+
+@router.post(
+    "/{routine_id}/days/{day_id}/uncomplete",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def uncomplete_day(
+    routine_id: int,
+    day_id: int,
+    date: date | None = None,
+    routine: models.Routine = Depends(get_owned_routine),
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    services.uncomplete_day(
+        db=db,
+        routine_id=routine_id,
+        day_id=day_id,
+        user=current_user,
+        date_override=date,
+    )
+    return

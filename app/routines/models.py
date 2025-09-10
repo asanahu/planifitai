@@ -3,6 +3,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Date,
     ForeignKey,
     Integer,
     String,
@@ -48,6 +49,7 @@ class RoutineDay(Base):
     routine_id = Column(Integer, ForeignKey("routines.id"), nullable=False)
     weekday = Column(Integer, nullable=False)  # 0=Monday, 6=Sunday
     order_index = Column(Integer, default=0, nullable=False)
+    equipment = Column(JSON, nullable=True)
 
     routine = relationship("Routine", back_populates="days")
     exercises = relationship(
@@ -93,3 +95,21 @@ class RoutineExercise(Base):
 
     day = relationship("RoutineDay", back_populates="exercises")
     exercise = relationship("ExerciseCatalog")
+
+
+class RoutineExerciseCompletion(Base):
+    __tablename__ = "routine_exercise_completions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    routine_exercise_id = Column(
+        Integer, ForeignKey("routine_exercises.id", ondelete="CASCADE"), nullable=False
+    )
+    date = Column(Date, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "routine_exercise_id", "date", name="uix_user_exercise_date"
+        ),
+    )

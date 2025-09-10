@@ -51,6 +51,7 @@ class RoutineExerciseUpdate(RoutineExerciseBase):
 class RoutineExerciseRead(RoutineExerciseBase):
     id: int
     exercise_id: Optional[int] = None
+    completed: bool = False
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -59,14 +60,18 @@ class RoutineExerciseRead(RoutineExerciseBase):
 class RoutineDayBase(BaseModel):
     weekday: int = Field(..., ge=0, le=6)  # 0=Monday, 6=Sunday
     order_index: int = 0
+    equipment: Optional[List[str]] = None
 
 
 class RoutineDayCreate(RoutineDayBase):
     exercises: List[RoutineExerciseCreate] = []
 
 
-class RoutineDayUpdate(RoutineDayBase):
-    exercises: List[RoutineExerciseUpdate] = []
+class RoutineDayUpdate(BaseModel):
+    weekday: int | None = Field(None, ge=0, le=6)
+    order_index: int | None = None
+    equipment: List[str] | None = None
+    exercises: List[RoutineExerciseUpdate] | None = None
 
 
 class RoutineDayRead(RoutineDayBase):

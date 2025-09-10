@@ -23,6 +23,7 @@ export function generateWorkoutPlanAI(
     // backend
     days_per_week: number;
     equipment: string;
+    equipment_by_day: Record<number, string[]>;
     preferences: Record<string, string>;
     preferred_days: number[]; // 0=Lunes..6=Domingo
     injuries: string[];
@@ -31,6 +32,7 @@ export function generateWorkoutPlanAI(
   const body = {
     days_per_week: payload.days_per_week ?? payload.days ?? 3,
     equipment: payload.equipment,
+    equipment_by_day: payload.equipment_by_day,
     preferences: payload.preferences,
     preferred_days: payload.preferred_days,
     injuries: payload.injuries,

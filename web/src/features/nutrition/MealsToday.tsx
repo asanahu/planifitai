@@ -33,29 +33,16 @@ export default function MealsToday() {
     return (
       <div className="space-y-2 p-3">
         <p>No hay comidas registradas</p>
-        <div className="flex gap-2">
-          <button
-            data-testid="add-first-meal"
-            role="button"
-            aria-label="Añadir primera comida"
-            className="rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            onClick={() => {
-              const name = prompt('Nombre de la comida');
-              if (name) addMeal.mutate(name);
-            }}
-          >
-            Añadir primera comida
-          </button>
-          <Link
-            to="/nutrition/plan"
-            role="button"
-            aria-label="Plan semanal"
-            tabIndex={0}
-            className="rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
-          >
-            Plan semanal
-          </Link>
-        </div>
+        <p className="text-sm text-gray-600">Gestiona tus comidas desde el plan semanal.</p>
+        <Link
+          to="/nutrition/plan"
+          role="button"
+          aria-label="Plan semanal"
+          tabIndex={0}
+          className="inline-block rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        >
+          Ir al plan semanal
+        </Link>
       </div>
     );
   }
@@ -162,18 +149,16 @@ export default function MealsToday() {
           </div>
         </div>
       ))}
-      <button
-        role="button"
-        aria-label="Añadir comida"
-        className="h-10 rounded bg-blue-500 px-4 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-        onClick={() => {
-          const name = prompt('Nombre de la comida');
-          if (name) addMeal.mutate(name);
-        }}
-      >
-        Añadir comida
-      </button>
+      <div className="pt-2">
+        <Link
+          to="/nutrition/plan"
+          role="button"
+          aria-label="Editar en plan semanal"
+          className="inline-block h-10 rounded border px-4 align-middle leading-10 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        >
+          Editar en plan semanal
+        </Link>
+      </div>
     </div>
   );
 }
-

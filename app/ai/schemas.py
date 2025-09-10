@@ -32,6 +32,8 @@ class WorkoutPlan(BaseModel):
 class WorkoutPlanRequest(BaseModel):
     days_per_week: int = 3
     equipment: Optional[str] = None
+    # Per-day equipment availability (0=Lunes..6=Domingo)
+    equipment_by_day: Optional[dict[int, list[str]]] = None
     preferences: Optional[Dict[str, str]] = None
     # Nuevos campos opcionales para personalización adicional
     preferred_days: Optional[List[int]] = None  # 0=Lunes .. 6=Domingo

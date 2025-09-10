@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getPlannedDayFor, completeDay, type Routine, type RoutineDay } from '../../api/routines';
+import { getPlannedDayFor, completeDay, uncompleteDay, type Routine, type RoutineDay } from '../../api/routines';
 import { listProgress } from '../../api/progress';
 import { daysAgo, today } from '../../utils/date';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -18,7 +18,7 @@ export function TodayWorkoutCard() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (ids: { routineId: string; dayId: string }) => completeDay(ids.routineId, ids.dayId),
+    mutationFn: async (ids: { routineId: string; dayId: string }) => completeDay(ids.routineId, ids.dayId, dateStr),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ['routine-day', dateStr] });
       type RoutineDayData = { routine: Routine; day: RoutineDay };
@@ -45,14 +45,38 @@ export function TodayWorkoutCard() {
   });
 
   if (dayQuery.isLoading) return <Skeleton className="h-40" />;
-  const data = dayQuery.data;
+  const data = dayQuery.data && dayQuery.data.isFallback ? null : dayQuery.data;
+  const fallbackInfo = dayQuery.data && (dayQuery.data as any).isFallback ? (dayQuery.data as any) : null;
   if (!data)
     return (
       <section className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
-        <p>No tienes rutina hoy</p>
-        <Link to="/workout/generate" className="mt-2 inline-block rounded bg-blue-500 px-3 py-1 text-sm text-white">
-          Generar plan IA
-        </Link>
+        <p className="font-medium">No tienes rutina hoy</p>
+        <p className="text-sm opacity-80">Hoy no hay sesión planificada.</p>
+        {fallbackInfo?.next && (
+          <p className="text-sm mt-1">
+            Próxima sesión:{' '}
+            {new Date(fallbackInfo.next).toLocaleDateString('es-ES', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'short',
+            })}
+          </p>
+        )}
+        <div className="mt-2 flex gap-2">
+          <Link
+            to={fallbackInfo?.next ? `/workout?select=${encodeURIComponent(fallbackInfo.next)}` : "/workout"}
+            aria-label="Ver semana de entrenamiento"
+            className="inline-block rounded border px-3 py-1 text-sm"
+          >
+            Ver semana
+          </Link>
+          <Link
+            to="/workout/generate"
+            className="inline-block rounded bg-blue-500 px-3 py-1 text-sm text-white"
+          >
+            Generar plan IA
+          </Link>
+        </div>
       </section>
     );
 
@@ -112,6 +136,24 @@ export function TodayWorkoutCard() {
             className="flex h-10 items-center gap-1 rounded bg-green-500 px-4 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <CheckCircle className="h-4 w-4" /> Marcar día completado
+          </button>
+        )}
+        {allDone && (
+          <button
+            onClick={async () => {
+              try {
+                await uncompleteDay(routine.id, day.id, dateStr);
+                pushToast('Se deshizo el día');
+                qc.invalidateQueries({ queryKey: ['routine-day', dateStr] });
+                qc.invalidateQueries({ queryKey: ['workout-progress'] });
+              } catch (e) {
+                pushToast('No se pudo deshacer', 'error');
+              }
+            }}
+            aria-label="Deshacer completado"
+            className="flex h-10 items-center gap-1 rounded border px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            Deshacer día
           </button>
         )}
       </div>

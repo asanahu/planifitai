@@ -18,7 +18,8 @@ function parseWeekdayName(wd?: string): number | null {
 
 export function mapAiWorkoutPlanToRoutine(
   ai: AiWorkoutPlanJSON,
-  preferredWeekdays?: number[]
+  preferredWeekdays?: number[],
+  equipmentByDay?: Record<number, string[]>
 ): RoutineCreatePayload {
   const name = ai.name ?? 'AI Routine';
   const days = (ai.days ?? []).map((day, idx) => {
@@ -28,6 +29,7 @@ export function mapAiWorkoutPlanToRoutine(
       weekday,
       name: (day as any).name ?? day.focus ?? `Day ${idx + 1}`,
       duration: 60,
+      equipment: equipmentByDay?.[weekday],
       exercises: (day.exercises ?? []).map((ex, j) => ({
         name: ex.name ?? `Exercise ${j + 1}`,
         reps: (ex as any).reps ?? (ex as any).sets ?? 10,

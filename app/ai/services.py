@@ -95,11 +95,20 @@ def generate_workout_plan(
     preferred_days_txt = (
         ", ".join(str(d) for d in (req.preferred_days or [])) if req.preferred_days else None
     )
+    per_day_eq_txt = None
+    if req.equipment_by_day:
+        # Render mapping as human-readable pairs (e.g., 0:["mancuernas","barra"])
+        items = []
+        for k in sorted(req.equipment_by_day.keys()):
+            v = ", ".join(req.equipment_by_day[k])
+            items.append(f"{k}:[{v}]")
+        per_day_eq_txt = "; ".join(items)
     injuries_txt = ", ".join(req.injuries or []) if req.injuries else None
     user_prompt = (
         f"Genera un plan de entrenamiento personalizado en español. Días/semana: {req.days_per_week}. "
-        f"Equipo disponible: {req.equipment or 'ninguno'}. Preferencias: {req.preferences or {}}. "
+        f"Equipo general disponible: {req.equipment or 'ninguno'}. Preferencias: {req.preferences or {}}. "
         + (f"Días preferidos (0=lunes..6=domingo): [{preferred_days_txt}]. " if preferred_days_txt else "")
+        + (f"Equipo por día (0..6): {per_day_eq_txt}. " if per_day_eq_txt else "")
         + (f"Lesiones/restricciones: {injuries_txt}. " if injuries_txt else "")
         + "No devuelvas texto fuera del JSON."
     )

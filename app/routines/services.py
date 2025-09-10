@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Tuple
 
 from fastapi import HTTPException, status
@@ -43,6 +43,33 @@ def list_exercises(
         where_clauses.append(or_(*[c.like(pattern) for c in search_cols]))
 
     if muscle:
+        def _norm(s: str) -> str:
+            return (
+                s.lower()
+                .replace("á", "a")
+                .replace("é", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ú", "u")
+                .replace("ü", "u")
+            )
+
+        synonyms_map = {
+            "pecho": ["pecho", "pectorales", "chest", "pectorals"],
+            "espalda": ["espalda", "back", "lats", "dorsales"],
+            "hombros": ["hombros", "shoulders", "delts", "deltoids"],
+            "biceps": ["biceps", "bíceps", "bicep"],
+            "triceps": ["triceps", "tríceps", "tricep"],
+            "antebrazos": ["antebrazos", "forearms"],
+            "abdominales": ["abdominales", "abs", "core", "oblicuos", "obliques"],
+            "gluteos": ["gluteos", "glúteos", "glutes"],
+            "cuadriceps": ["cuadriceps", "cuádriceps", "quads", "quadriceps", "quad"],
+            "isquiotibiales": ["isquiotibiales", "hamstrings"],
+            "gemelos": ["gemelos", "calves", "calf"],
+        }
+        mkey = _norm(muscle)
+        values = synonyms_map.get(mkey, [muscle])
+
         muscle_col = None
         for attr in ["muscle_groups", "muscles", "muscle", "category"]:
             if hasattr(Exercise, attr):
@@ -51,12 +78,11 @@ def list_exercises(
         if muscle_col is not None:
             coltype = muscle_col.type.__class__.__name__.lower()
             if "array" in coltype or "json" in coltype:
-                # Hacemos búsqueda textual para mayor compatibilidad entre SQLite/Postgres
-                where_clauses.append(
-                    func.lower(cast(muscle_col, String)).like(f"%{muscle.lower()}%")
-                )
+                conds = [func.lower(cast(muscle_col, String)).like(f"%{v.lower()}%") for v in values]
+                where_clauses.append(or_(*conds))
             else:
-                where_clauses.append(func.lower(muscle_col).like(f"%{muscle.lower()}%"))
+                conds = [func.lower(muscle_col).like(f"%{v.lower()}%") for v in values]
+                where_clauses.append(or_(*conds))
 
     if equipment and hasattr(Exercise, "equipment"):
         where_clauses.append(
@@ -127,22 +153,57 @@ def get_exercise_filters(db: Session) -> dict:
     Exercise = getattr(models, "ExerciseCatalog")
     equipments: set[str] = set()
     muscles: set[str] = set()
-    rows = (
-        db.query(Exercise.equipment, Exercise.muscle_groups)
-        .limit(5000)
-        .all()
-    )
+    rows = db.query(Exercise.equipment, Exercise.muscle_groups).limit(5000).all()
+    # Canonical Spanish labels for common muscles/equipment
+    def _norm(s: str) -> str:
+        return (
+            s.lower()
+            .replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ú", "u")
+            .replace("ü", "u")
+        )
+    muscle_canon = {
+        "pecho": ["pecho", "pectorales", "chest", "pectorals"],
+        "espalda": ["espalda", "back", "lats", "dorsales"],
+        "hombros": ["hombros", "shoulders", "delts", "deltoids"],
+        "bíceps": ["biceps", "bíceps", "bicep"],
+        "tríceps": ["triceps", "tríceps", "tricep"],
+        "antebrazos": ["antebrazos", "forearms"],
+        "abdominales": ["abdominales", "abs", "core", "oblicuos", "obliques"],
+        "glúteos": ["gluteos", "glúteos", "glutes"],
+        "cuádriceps": ["cuadriceps", "cuádriceps", "quads", "quadriceps", "quad"],
+        "isquiotibiales": ["isquiotibiales", "hamstrings"],
+        "gemelos": ["gemelos", "calves", "calf"],
+    }
+    muscle_index = { _norm(v): k for k, arr in muscle_canon.items() for v in arr }
+    equip_canon = {
+        "peso corporal": ["bodyweight", "body weight", "peso corporal"],
+        "mancuernas": ["dumbbell", "mancuernas"],
+        "barra": ["barbell", "barra"],
+        "kettlebell": ["kettlebell"],
+        "máquina": ["machine", "máquina", "machine smith", "smith machine"],
+        "polea": ["cable", "polea"],
+        "banda elástica": ["band", "resistance band", "banda elástica"],
+        "balón medicinal": ["medicine ball", "balón medicinal"],
+    }
+    equip_index = { _norm(v): k for k, arr in equip_canon.items() for v in arr }
     for eq, mg in rows:
         if eq:
-            equipments.add(str(eq))
+            key = equip_index.get(_norm(str(eq)))
+            equipments.add(key or str(eq))
         if mg:
             try:
                 for m in mg:
                     if m:
-                        muscles.add(str(m))
+                        key = muscle_index.get(_norm(str(m)))
+                        muscles.add(key or str(m))
             except TypeError:
                 # fallback if stored as string
-                muscles.add(str(mg))
+                key = muscle_index.get(_norm(str(mg)))
+                muscles.add(key or str(mg))
     return {
         "equipment": sorted(equipments),
         "muscles": sorted(muscles),
@@ -214,6 +275,7 @@ def create_routine(db: Session, routine: schemas.RoutineCreate, user: UserContex
             routine_id=db_routine.id,
             weekday=day_data.weekday,
             order_index=day_data.order_index,
+            equipment=getattr(day_data, "equipment", None),
         )
         db.add(db_day)
         db.commit()
@@ -560,11 +622,157 @@ def complete_exercise(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
     date_val = payload.timestamp.date()
+    # Mark this specific exercise as completed for the given date
+    from .models import RoutineExerciseCompletion  # local import to avoid cycles
+
+    existing_ce = (
+        db.query(RoutineExerciseCompletion)
+        .filter(
+            RoutineExerciseCompletion.user_id == user.id,
+            RoutineExerciseCompletion.routine_exercise_id == exercise_id,
+            RoutineExerciseCompletion.date == date_val,
+        )
+        .first()
+    )
+    if not existing_ce:
+        ce = RoutineExerciseCompletion(
+            user_id=user.id, routine_exercise_id=exercise_id, date=date_val
+        )
+        db.add(ce)
+        db.commit()
+
+    # If all exercises for the day are completed on this date, ensure day-level ProgressEntry exists
+    day_exercises = [ex.id for ex in db_exercise.day.exercises]
+    completed_for_day = (
+        db.query(RoutineExerciseCompletion.routine_exercise_id)
+        .filter(
+            RoutineExerciseCompletion.user_id == user.id,
+            RoutineExerciseCompletion.routine_exercise_id.in_(day_exercises),
+            RoutineExerciseCompletion.date == date_val,
+        )
+        .distinct()
+        .count()
+    )
+    if completed_for_day >= len(day_exercises) and len(day_exercises) > 0:
+        existing = (
+            db.query(progress_models.ProgressEntry)
+            .filter(
+                progress_models.ProgressEntry.user_id == user.id,
+                progress_models.ProgressEntry.date == date_val,
+                progress_models.ProgressEntry.metric
+                == progress_models.MetricEnum.workout,
+            )
+            .first()
+        )
+        if not existing:
+            entry = progress_models.ProgressEntry(
+                user_id=user.id,
+                date=date_val,
+                metric=progress_models.MetricEnum.workout,
+                value=payload.duration_seconds or 1,
+            )
+            db.add(entry)
+            db.commit()
+            db.refresh(entry)
+            return entry
+        return existing
+    # If day is not fully completed, return a generic status
+    return {"detail": "exercise_marked"}
+
+
+def uncomplete_exercise(
+    db: Session,
+    exercise_id: int,
+    user: UserContext,
+    date_val: date,
+):
+    from .models import RoutineExerciseCompletion  # local import
+
+    db_exercise = db.get(models.RoutineExercise, exercise_id)
+    if not db_exercise:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+    routine = db_exercise.day.routine
+    if routine.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
+    ce = (
+        db.query(RoutineExerciseCompletion)
+        .filter(
+            RoutineExerciseCompletion.user_id == user.id,
+            RoutineExerciseCompletion.routine_exercise_id == exercise_id,
+            RoutineExerciseCompletion.date == date_val,
+        )
+        .first()
+    )
+    if ce:
+        db.delete(ce)
+        db.commit()
+    # If there is a day-level ProgressEntry for that date but not all exercises are completed anymore, remove it
+    day_exercises = [ex.id for ex in db_exercise.day.exercises]
+    remaining = (
+        db.query(RoutineExerciseCompletion)
+        .filter(
+            RoutineExerciseCompletion.user_id == user.id,
+            RoutineExerciseCompletion.routine_exercise_id.in_(day_exercises),
+            RoutineExerciseCompletion.date == date_val,
+        )
+        .count()
+    )
+    if remaining < len(day_exercises):
+        pe = (
+            db.query(progress_models.ProgressEntry)
+            .filter(
+                progress_models.ProgressEntry.user_id == user.id,
+                progress_models.ProgressEntry.date == date_val,
+                progress_models.ProgressEntry.metric
+                == progress_models.MetricEnum.workout,
+            )
+            .first()
+        )
+        if pe:
+            db.delete(pe)
+            db.commit()
+    return {"detail": "exercise_unmarked"}
+
+
+def complete_day(
+    db: Session,
+    routine_id: int,
+    day_id: int,
+    user: UserContext,
+    date_override: date | None = None,
+):
+    """Mark a routine day as completed by creating a workout ProgressEntry for today.
+
+    Idempotent: if an entry for today already exists, return it.
+    Guards ownership by ensuring the day belongs to the user's routine.
+    """
+    # Ensure the day belongs to the routine and the routine belongs to the user
+    db_day = (
+        db.query(models.RoutineDay)
+        .join(models.Routine)
+        .filter(
+            models.RoutineDay.id == day_id,
+            models.RoutineDay.routine_id == routine_id,
+            models.Routine.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not db_day:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Day not found")
+    routine = db_day.routine
+    if routine.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
+
+    today = date_override or date.today()
     existing = (
         db.query(progress_models.ProgressEntry)
         .filter(
             progress_models.ProgressEntry.user_id == user.id,
-            progress_models.ProgressEntry.date == date_val,
+            progress_models.ProgressEntry.date == today,
             progress_models.ProgressEntry.metric == progress_models.MetricEnum.workout,
         )
         .first()
@@ -573,11 +781,55 @@ def complete_exercise(
         return existing
     entry = progress_models.ProgressEntry(
         user_id=user.id,
-        date=date_val,
+        date=today,
         metric=progress_models.MetricEnum.workout,
-        value=payload.duration_seconds or 1,
+        value=1,
     )
     db.add(entry)
     db.commit()
     db.refresh(entry)
     return entry
+
+
+def uncomplete_day(
+    db: Session,
+    routine_id: int,
+    day_id: int,
+    user: UserContext,
+    date_override: date | None = None,
+):
+    """Undo completion for a routine day by removing the workout progress entry for that date.
+
+    No-op if there is no entry.
+    """
+    db_day = (
+        db.query(models.RoutineDay)
+        .join(models.Routine)
+        .filter(
+            models.RoutineDay.id == day_id,
+            models.RoutineDay.routine_id == routine_id,
+            models.Routine.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not db_day:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Day not found")
+    routine = db_day.routine
+    if routine.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
+    target_date = date_override or date.today()
+    entry = (
+        db.query(progress_models.ProgressEntry)
+        .filter(
+            progress_models.ProgressEntry.user_id == user.id,
+            progress_models.ProgressEntry.date == target_date,
+            progress_models.ProgressEntry.metric == progress_models.MetricEnum.workout,
+        )
+        .first()
+    )
+    if entry:
+        db.delete(entry)
+        db.commit()
+    return {"detail": "uncompleted"}

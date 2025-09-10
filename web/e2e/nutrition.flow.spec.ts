@@ -13,5 +13,5 @@ test('nutrition page shows empty state', async ({ page }) => {
   await login(page);
   await page.goto('/nutrition/today');
   await expect(page.getByText('No hay comidas registradas')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Añadir primera comida/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Plan semanal|Ir al plan semanal/i })).toBeVisible();
 });

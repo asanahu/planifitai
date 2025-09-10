@@ -37,9 +37,16 @@ export function TodayReminders() {
 
   const items: string[] = [];
   if (routineQuery.data) {
-    const { routine, day } = routineQuery.data;
-    const idx = routine.days.findIndex((d) => d.id === day.id) + 1;
-    items.push(`Hoy toca: Entrenamiento ${idx} — ${routine.name}.`);
+    const anyData: any = routineQuery.data as any;
+    const { routine, day, next } = anyData;
+    if (day && routine) {
+      const idx = routine.days.findIndex((d: any) => d.id === day.id) + 1;
+      if (idx > 0) items.push(`Hoy toca: Entrenamiento ${idx} — ${routine.name}.`);
+      else items.push(`Hoy toca: ${routine.name}.`);
+    } else if (next && routine) {
+      const d = new Date(next).toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'short' });
+      items.push(`Próxima sesión: ${d} — ${routine.name}.`);
+    }
   }
   if (nutritionQuery.data?.targets?.calories) {
     items.push(`Objetivo de hoy: ${nutritionQuery.data.targets.calories} kcal. Mantén tu ritmo.`);

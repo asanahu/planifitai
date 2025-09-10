@@ -67,9 +67,15 @@ def create_app() -> FastAPI:
     app.include_router(training_router)
     
     # permitir llamadas desde el frontend durante desarrollo
+    cors_origins = {
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    }
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],  # origen del servidor de Vite
+        allow_origins=list(cors_origins),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

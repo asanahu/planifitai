@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { generateWorkoutPlanAI } from '../../api/ai';
 import { mapAiWorkoutPlanToRoutine } from './aiMap';
-import { createRoutine, setActiveRoutine, type RoutineCreatePayload } from '../../api/routines';
+import { createRoutine, setActiveRoutine, type RoutineCreatePayload, listRoutines } from '../../api/routines';
 import { pushToast } from '../../components/ui/Toast';
 import Overlay from '../../components/ui/Overlay';
 
@@ -23,6 +23,52 @@ export default function GenerateFromAI() {
   const useAI = import.meta.env.VITE_FEATURE_AI === '1';
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 2, 4]);
   const [injuries, setInjuries] = useState<string>('');
+  const [equipmentByDay, setEquipmentByDay] = useState<Record<number, string[]>>({});
+
+  const EQUIPMENT: { key: string; label: string }[] = [
+    { key: 'bodyweight', label: 'Peso corporal' },
+    { key: 'dumbbells', label: 'Mancuernas' },
+    { key: 'barbell', label: 'Barra' },
+    { key: 'kettlebell', label: 'Kettlebell' },
+    { key: 'bands', label: 'Bandas' },
+    { key: 'machine', label: 'Máquinas' },
+    { key: 'cable', label: 'Polea' },
+  ];
+
+  function toggleEquip(day: number, key: string) {
+    setEquipmentByDay((prev) => {
+      const curr = new Set(prev[day] || []);
+      if (curr.has(key)) curr.delete(key);
+      else curr.add(key);
+      return { ...prev, [day]: Array.from(curr) };
+    });
+  }
+
+  // Prefill from current routine if exists (one-time, non-blocking for edits)
+  const routinesQ = useQuery({ queryKey: ['routines'], queryFn: listRoutines });
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (prefilled) return;
+    const routines = routinesQ.data || [];
+    if (routines.length === 0) return;
+    // Only prefill if user hasn't edited yet: still defaults and no equipment set
+    const isDefaultDays = selectedDays.join(',') === '0,2,4';
+    const hasEquip = Object.keys(equipmentByDay || {}).length > 0;
+    if (!isDefaultDays || hasEquip) return;
+    const r = routines[routines.length - 1];
+    const days = r.days || [];
+    const wk: number[] = days.map((d) => (new Date(d.date).getDay() + 6) % 7);
+    if (wk.length > 0) setSelectedDays(Array.from(new Set(wk)).sort((a, b) => a - b));
+    // Extract equipment per day if present
+    const byDay: Record<number, string[]> = {};
+    for (const d of days) {
+      const jsIdx = (new Date(d.date).getDay() + 6) % 7;
+      const eq = (d as any).equipment as string[] | undefined;
+      if (eq && eq.length) byDay[jsIdx] = eq;
+    }
+    if (Object.keys(byDay).length > 0) setEquipmentByDay(byDay);
+    setPrefilled(true);
+  }, [prefilled, routinesQ.data]);
 
   const fallback: RoutineCreatePayload = {
     name: 'Full Body 3d',
@@ -41,12 +87,13 @@ export default function GenerateFromAI() {
         const ai = await generateWorkoutPlanAI({
           days_per_week: selectedDays.length || 3,
           preferred_days: selectedDays,
+          equipment_by_day: equipmentByDay,
           injuries: injuries
             .split(',')
             .map((s) => s.trim())
             .filter(Boolean),
         });
-        const payload = mapAiWorkoutPlanToRoutine(ai, selectedDays);
+        const payload = mapAiWorkoutPlanToRoutine(ai, selectedDays, equipmentByDay);
         const routine = await createRoutine(payload);
         await setActiveRoutine(routine.id);
         return routine;
@@ -98,6 +145,31 @@ export default function GenerateFromAI() {
             ))}
           </div>
         </div>
+        {selectedDays.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm opacity-80">Material disponible por día</p>
+            <div className="grid gap-2">
+              {selectedDays.map((d) => (
+                <div key={d} className="rounded border p-2">
+                  <div className="text-sm font-medium mb-1">{WEEKDAYS.find((w) => w.id === d)?.label}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {EQUIPMENT.map((eq) => (
+                      <label key={eq.key} className={`px-2 py-1 rounded-full border text-xs cursor-pointer ${equipmentByDay[d]?.includes(eq.key) ? 'bg-planifit-500 text-white border-planifit-500' : 'border-gray-300'}`}>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={!!equipmentByDay[d]?.includes(eq.key)}
+                          onChange={() => toggleEquip(d, eq.key)}
+                        />
+                        {eq.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <label className="block text-sm opacity-80 mb-1">Lesiones o restricciones (separadas por coma)</label>
           <input
