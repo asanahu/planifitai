@@ -30,7 +30,7 @@ class WorkoutPlan(BaseModel):
 
 
 class WorkoutPlanRequest(BaseModel):
-    days_per_week: int
+    days_per_week: int = 3
     equipment: Optional[str] = None
     preferences: Optional[Dict[str, str]] = None
 
@@ -66,7 +66,7 @@ class NutritionPlan(BaseModel):
 
 
 class NutritionPlanRequest(BaseModel):
-    days: int
+    days: int = 3
     preferences: Optional[Dict[str, str]] = None
 
 

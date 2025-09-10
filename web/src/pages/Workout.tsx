@@ -7,6 +7,7 @@ import { today } from '../utils/date';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import { pushToast } from '../components/ui/Toast';
+import PageHeader from '../components/layout/PageHeader';
 
 export default function WorkoutPage() {
   const { data, isLoading } = useQuery({ queryKey: ['routines'], queryFn: listRoutines });
@@ -64,6 +65,10 @@ export default function WorkoutPage() {
   const day = routine.days.find((d) => d.date === selected) || routine.days[0];
   return (
     <div className="space-y-4 p-3 md:p-6">
+      <PageHeader>
+        <h1 className="text-xl font-semibold">Rutina</h1>
+        <p className="text-sm opacity-90">Planifica y sigue tus entrenamientos</p>
+      </PageHeader>
       <WeekView routine={routine} selected={selected} onSelect={setSelected} />
       {day && <DayDetail routineId={routine.id} day={day} />}
     </div>

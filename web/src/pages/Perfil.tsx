@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMe, updateMyProfile, type MeResponse } from '../api/users';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import PageHeader from '../components/layout/PageHeader';
+import Overlay from '../components/ui/Overlay';
 
 const schema = z.object({
   age: z.number({ message: 'Edad requerida' }).int().min(14).max(100),
@@ -53,11 +55,13 @@ export default function PerfilPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-2">Completa tu perfil</h1>
-      <p className="text-gray-600 mb-6">Completar tu perfil desbloquea PlanifitAI y personaliza tus planes.</p>
+    <div className="mx-auto max-w-2xl space-y-4 p-6">
+      <PageHeader>
+        <h1 className="text-xl font-semibold">Tu perfil</h1>
+        <p className="text-sm opacity-90">Completar tu perfil desbloquea PlanifitAI</p>
+      </PageHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-[180px_minmax(0,1fr)] gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="relative grid grid-cols-[180px_minmax(0,1fr)] gap-4">
         <label className="self-center" htmlFor="age">Edad</label>
         <div>
           <input id="age" aria-label="Edad" type="number" className="w-full rounded-2xl shadow border p-2" {...register('age', { valueAsNumber: true })} />
@@ -107,8 +111,8 @@ export default function PerfilPage() {
           </button>
           {errorMsg && <span className="text-red-600 text-sm">{errorMsg}</span>}
         </div>
+        {mutation.isPending && <Overlay>Guardando tu perfil…</Overlay>}
       </form>
     </div>
   );
 }
-

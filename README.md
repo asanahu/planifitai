@@ -99,6 +99,20 @@ AI_INTERNAL_SECRET=<shared-secret>
 
 Si se elimina `AI_SERVICE_URL` el sistema vuelve automáticamente al modo local.
 
+### OpenRouter (DeepSeek V3.1 free)
+
+Para usar el modelo gratuito de DeepSeek vía OpenRouter en todas las interacciones de IA (chat, generación de workouts y planes nutricionales), añade a tu `.env`:
+
+```
+AI_FEATURES_ENABLED=true
+OPENROUTER_KEY=tu_api_key_de_openrouter
+# opcional, solo ranking en OpenRouter
+OPENROUTER_HTTP_REFERER=https://tu-sitio.example
+OPENROUTER_APP_TITLE=PlanifitAI
+```
+
+Por defecto se usa el modelo `deepseek/deepseek-chat-v3.1:free` y el endpoint `https://openrouter.ai/api/v1`. Si no estableces `OPENROUTER_KEY` el sistema mantiene respuestas simuladas para desarrollo/pruebas.
+
 ## Feature flags
 
 Las rutas de IA están deshabilitadas por defecto.

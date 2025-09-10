@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     AI_SERVICE_URL: str | None = None
     AI_INTERNAL_SECRET: str | None = None
 
+    # OpenRouter (DeepSeek free)
+    OPENROUTER_KEY: str | None = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_CHAT_MODEL: str = "deepseek/deepseek-chat-v3.1:free"
+    # Optional headers for OpenRouter rankings (no funcional, solo ranking)
+    OPENROUTER_HTTP_REFERER: str | None = None
+    OPENROUTER_APP_TITLE: str | None = None
+
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
 

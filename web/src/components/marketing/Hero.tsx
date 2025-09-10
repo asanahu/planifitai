@@ -1,11 +1,14 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Button from '../ui/button';
+import { useAuth } from '../../hooks/useAuth';
 
 const variant = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
 export default function Hero() {
   const prefersReducedMotion = useReducedMotion();
+  const { user } = useAuth();
+  const primaryTo = user ? '/today' : '/register';
 
   return (
     <section className="bg-gradient-to-br from-planifit-500 via-violet-500 to-indigo-500 py-24 text-white">
@@ -36,7 +39,7 @@ export default function Hero() {
           className="flex flex-col gap-4 sm:flex-row"
         >
           <Button asChild>
-            <Link to="/register">Comenzar ahora</Link>
+            <Link to={primaryTo}>Comenzar ahora</Link>
           </Button>
           <Button variant="secondary" asChild>
             <Link to="#demo">Ver demo</Link>
@@ -46,4 +49,3 @@ export default function Hero() {
     </section>
   );
 }
-

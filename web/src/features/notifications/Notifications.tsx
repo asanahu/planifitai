@@ -1,6 +1,7 @@
 import type { Notification } from "../../api/notifications";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listNotifications, markAsRead } from '../../api/notifications';
+import PageHeader from '../../components/layout/PageHeader';
 import { today } from '../../utils/date';
 
 export function Notifications() {
@@ -21,10 +22,22 @@ export function Notifications() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
-  if (!data) return <p>Cargando...</p>;
-  if (data.length === 0) return <p>Sin notificaciones</p>;
+  if (!data) return <div className="p-4">Cargando...</div>;
+  if (data.length === 0)
+    return (
+      <div className="space-y-3 p-4">
+        <PageHeader>
+          <h1 className="text-xl font-semibold">Notificaciones</h1>
+          <p className="text-sm opacity-90">No tienes notificaciones pendientes</p>
+        </PageHeader>
+      </div>
+    );
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
+      <PageHeader>
+        <h1 className="text-xl font-semibold">Notificaciones</h1>
+        <p className="text-sm opacity-90">Recordatorios y avisos</p>
+      </PageHeader>
       <div className="text-right">
         <button className="h-10 rounded bg-blue-500 px-4 text-sm text-white" onClick={() => markAll.mutate()}>
           Marcar todo como visto

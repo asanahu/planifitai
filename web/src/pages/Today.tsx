@@ -13,6 +13,7 @@ import { calcWeekAdherence, type WeekMeal, type WeekWorkout } from '../utils/adh
 import { loadAchievements } from '../utils/achievements';
 import AchievementBadge from '../components/AchievementBadge';
 import { Dumbbell, CheckCircle, Flame, Scale } from 'lucide-react';
+import PageHeader from '../components/layout/PageHeader';
 
 export default function TodayPage() {
   const date = today();
@@ -117,6 +118,10 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-3 p-3 md:p-6">
+      <PageHeader>
+        <h1 className="text-xl font-semibold">Resumen de hoy</h1>
+        <p className="text-sm opacity-90">Tu actividad y nutrición de un vistazo</p>
+      </PageHeader>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <KpiCard title="Sesiones semana" value={sessionsVal} icon={<Dumbbell className="h-4 w-4" />} />
         <KpiCard title="Adherencia" value={adherenceVal} icon={<CheckCircle className="h-4 w-4" />} />

@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from app.ai.provider import OpenAIProvider
+from app.ai.provider import OpenAIProvider, OpenRouterProvider
 from app.core.config import settings
 
 
@@ -84,12 +84,16 @@ class AiClient:
 
 class LocalAiClient:
     def __init__(self) -> None:
-        self._provider = OpenAIProvider()
+        # Prefer OpenRouter when configured, otherwise keep simulated provider
+        if settings.OPENROUTER_KEY:
+            self._provider = OpenRouterProvider()
+        else:
+            self._provider = OpenAIProvider()
 
     def embeddings(
         self, user_id: int, texts: List[str], *, simulate: bool = False
     ) -> List[List[float]]:
-        return [self._provider.embedding(t, simulate=True) for t in texts]
+        return [self._provider.embedding(t, simulate=simulate) for t in texts]
 
     def chat(
         self,
@@ -99,7 +103,13 @@ class LocalAiClient:
         model: Optional[str] = None,
         simulate: bool = False,
     ) -> Dict[str, Any]:
-        return self._provider.chat(user_id, messages, simulate=True)
+        # OpenRouterProvider supports optional model override
+        if hasattr(self._provider, "chat"):
+            try:
+                return self._provider.chat(user_id, messages, simulate=simulate, model=model)  # type: ignore[arg-type]
+            except TypeError:
+                pass
+        return self._provider.chat(user_id, messages, simulate=simulate)
 
 
 _client: LocalAiClient | AiClient | None = None

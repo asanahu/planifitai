@@ -45,15 +45,32 @@ export default function MealsPlan() {
               <button onClick={() => clearDay(day)}>Limpiar</button>
             </div>
           </div>
-          <ul className="space-y-1">
-            {meals.map((meal) => (
-              <li key={meal} className="flex justify-between">
-                <span>{meal}</span>
-                <button className="text-sm text-blue-500" onClick={() => update(day, meal)}>
-                  {plan[day]?.[meal]?.length || 0} items
-                </button>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {meals.map((meal) => {
+              const items = plan[day]?.[meal] || [];
+              return (
+                <li key={meal} className="space-y-1">
+                  <div className="flex justify-between">
+                    <span>{meal}</span>
+                    <button
+                      className="text-sm text-blue-500"
+                      onClick={() => update(day, meal)}
+                    >
+                      Editar
+                    </button>
+                  </div>
+                  {items.length > 0 ? (
+                    <ul className="list-disc pl-5 text-sm text-gray-800">
+                      {items.map((it, idx) => (
+                        <li key={`${meal}-${idx}`}>{it}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-gray-500">Sin items</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}

@@ -8,6 +8,8 @@ const WeeklyAdherenceChart = lazy(() => import('../features/reports/WeeklyAdhere
 import { loadAchievements } from '../utils/achievements';
 import AchievementBadge from '../components/AchievementBadge';
 import { Skeleton } from '../components/ui/Skeleton';
+import Overlay from '../components/ui/Overlay';
+import PageHeader from '../components/layout/PageHeader';
 
 export default function ProgressPage() {
   const qc = useQueryClient();
@@ -33,7 +35,12 @@ export default function ProgressPage() {
   }, [tab]);
 
   return (
+    <>
     <div className="space-y-4 p-3 md:p-6">
+      <PageHeader>
+        <h1 className="text-xl font-semibold">Progreso</h1>
+        <p className="text-sm opacity-90">Peso, calorías y adherencia</p>
+      </PageHeader>
       <div className="flex gap-2">
         {['weight', 'calories', 'adherence', 'achievements'].map((t) => (
           <button
@@ -70,10 +77,11 @@ export default function ProgressPage() {
               onChange={(e) => setValue(e.target.value)}
             />
             <button
-              className="h-10 rounded bg-blue-500 px-4 text-white"
+              className="h-10 rounded bg-blue-500 px-4 text-white disabled:opacity-50"
+              disabled={!value || mutation.isPending}
               onClick={() => mutation.mutate()}
             >
-              Guardar peso
+              {mutation.isPending ? 'Guardando…' : 'Guardar peso'}
             </button>
           </div>
           {entriesQuery.isLoading ? (
@@ -117,5 +125,7 @@ export default function ProgressPage() {
         </div>
       )}
     </div>
+    {mutation.isPending && <Overlay>Guardando tu registro…</Overlay>}
+    </>
   );
 }
