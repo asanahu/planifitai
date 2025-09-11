@@ -1,6 +1,6 @@
 import logging
-from datetime import datetime, date
-from typing import List, Tuple
+from datetime import datetime, date, timedelta
+from typing import List, Tuple, Iterable, Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, func, or_, select, cast, String
@@ -11,6 +11,7 @@ from app.notifications.tasks import schedule_routine
 from app.progress import models as progress_models
 
 from . import models, schemas
+from app.services.rules_engine import IMPACT_WORDS
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +218,7 @@ def get_routines_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 
             selectinload(models.Routine.days).selectinload(models.RoutineDay.exercises)
         )
         .filter(models.Routine.owner_id == user_id, models.Routine.deleted_at.is_(None))
+        .order_by(models.Routine.created_at.asc(), models.Routine.id.asc())
         .offset(skip)
         .limit(limit)
         .all()
@@ -833,3 +835,246 @@ def uncomplete_day(
         db.delete(entry)
         db.commit()
     return {"detail": "uncompleted"}
+
+
+def _progress_value(sets: int | None, reps: int | None, seconds: int | None) -> tuple[int | None, int | None, int | None]:
+    """Small progression heuristic used to build next week's plan.
+
+    - If sets present: +1 up to 5
+    - Else if reps present: +1 up to 20
+    - Else if seconds present: +5 up to 120
+    """
+    if sets is not None:
+        sets = min(5, max(1, sets + 1))
+    elif reps is not None:
+        reps = min(20, max(1, reps + 1))
+    elif seconds is not None:
+        seconds = min(120, max(5, seconds + 5))
+    return sets, reps, seconds
+
+
+def create_next_week_from_routine(db: Session, routine_id: int, user: UserContext) -> models.Routine:
+    """Create a new routine representing the following week by applying a
+    simple progression heuristic to the current routine's exercises.
+
+    Keeps weekdays/order and copies optional equipment per day.
+    """
+    routine = get_routine(db, routine_id, user)
+
+    # Build RoutineCreate payload
+    next_name = f"{routine.name} — Semana siguiente"
+    payload = schemas.RoutineCreate(
+        name=next_name,
+        description=routine.description,
+        is_template=False,
+        is_public=False,
+        active_days=routine.active_days,
+        start_date=None,
+        end_date=None,
+        days=[],
+    )
+
+    # Compute start_date for next week: if current routine has start_date, add 7 days; otherwise next Monday
+    base_start: date
+    if getattr(routine, "start_date", None):
+        try:
+            base_start = routine.start_date.date()  # type: ignore[union-attr]
+        except Exception:
+            base_start = date.today()
+    else:
+        base_start = date.today()
+    # normalize to Monday of base week
+    monday_offset = (base_start.weekday() + 0) % 7  # weekday(): Mon=0..Sun=6
+    monday = base_start - timedelta(days=monday_offset)
+    next_monday = monday + timedelta(days=7)
+    payload.start_date = datetime.combine(next_monday, datetime.min.time())
+
+    for d in sorted(routine.days, key=lambda x: x.order_index):
+        day_create = schemas.RoutineDayCreate(
+            weekday=d.weekday,
+            order_index=d.order_index,
+            equipment=getattr(d, "equipment", None),
+            exercises=[],
+        )
+        ex_sorted = sorted(d.exercises, key=lambda x: x.order_index)
+        for idx, ex in enumerate(ex_sorted):
+            alt = _pick_alternative_exercise(
+                db=db,
+                base_ex=ex,
+                allowed_equipment=set(getattr(d, "equipment", []) or []),
+                order_index=idx,
+            )
+            new_name = alt.name if alt else ex.exercise_name
+            new_id = getattr(alt, "id", None) if alt else ex.exercise_id
+            new_sets, new_reps, new_secs = _progress_value(ex.sets, ex.reps, ex.time_seconds)
+            day_create.exercises.append(
+                schemas.RoutineExerciseCreate(
+                    exercise_id=new_id,
+                    exercise_name=new_name,
+                    sets=new_sets or 1,
+                    reps=new_reps,
+                    time_seconds=new_secs,
+                    tempo=ex.tempo,
+                    rest_seconds=ex.rest_seconds,
+                    notes=ex.notes,
+                    order_index=ex.order_index,
+                )
+            )
+        payload.days.append(day_create)
+
+    # Create and return
+    try:
+        return create_routine(db=db, routine=payload, user=user)
+    except HTTPException as exc:  # handle unique name clash by suffixing a counter
+        if exc.status_code == status.HTTP_400_BAD_REQUEST:
+            alt = schemas.RoutineCreate(**{**payload.model_dump(), "name": f"{routine.name} — Semana siguiente (1)"})
+            return create_routine(db=db, routine=alt, user=user)
+        raise
+
+
+# --------- Variety helpers ---------
+def _norm(s: str) -> str:
+    return (
+        s.lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+        .replace("ü", "u")
+    )
+
+
+def _avoid_impact(name: str) -> bool:
+    return all(w not in _norm(name) for w in IMPACT_WORDS)
+
+
+def _like_any(text: str, subs: Iterable[str]) -> bool:
+    t = _norm(text)
+    return any(sub in t for sub in subs)
+
+
+def _keyword_alternatives(name: str) -> list[str]:
+    """Fallback alternatives by keyword family if catalog is insufficient."""
+    families: dict[str, list[str]] = {
+        "push": ["flexiones inclinadas", "flexiones diamante", "flexiones declinadas", "press banca con mancuernas"],
+        "press": ["press hombro mancuernas", "push press con mancuernas", "arnold press"],
+        "squat": ["sentadilla goblet", "sentadilla búlgara", "zancadas", "sentadilla frontal"],
+        "lunge": ["zancadas inversas", "zancadas caminando", "split squat"],
+        "row": ["remo con mancuerna", "remo en barra", "remo con banda"],
+        "pull": ["dominadas supinas", "jalón al pecho con banda", "remo con banda"],
+        "deadlift": ["peso muerto rumano", "peso muerto con mancuerna", "hip hinge con banda"],
+        "hip": ["puente de glúteo", "hip thrust con mancuerna", "hip thrust a una pierna"],
+        "core": ["plancha", "dead bug", "bird dog"],
+        "curl": ["curl martillo", "curl concentrado", "curl con banda"],
+        "triceps": ["extensión tríceps con mancuerna", "fondos en banco", "jalón tríceps con banda"],
+    }
+    t = _norm(name)
+    for k, alts in families.items():
+        if k in t:
+            return alts
+    return []
+
+
+def _pick_alternative_exercise(
+    db: Session,
+    base_ex: models.RoutineExercise,
+    allowed_equipment: set[str],
+    order_index: int = 0,
+) -> Optional[models.ExerciseCatalog]:
+    """Suggest an alternative exercise using the catalog when possible.
+
+    - Avoid exact same name
+    - Respect allowed equipment (if provided)
+    - Avoid high impact exercises
+    - Prefer same muscle groups/category if known
+    - Deterministic selection based on order_index
+    """
+    Exercise = getattr(models, "ExerciseCatalog")
+    base_row: Optional[models.ExerciseCatalog] = None
+    if base_ex.exercise_id:
+        base_row = db.get(Exercise, base_ex.exercise_id)
+    if not base_row:
+        # try name match
+        q = (
+            db.query(Exercise)
+            .filter(func.lower(Exercise.name) == _norm(base_ex.exercise_name))
+            .first()
+        )
+        base_row = q if q else None
+
+    # gather candidates
+    cands: list[models.ExerciseCatalog] = (
+        db.query(Exercise).limit(1000).all()
+    )
+
+    def _allowed_eq(eq: Optional[str]) -> bool:
+        if not allowed_equipment:
+            return True
+        if not eq:
+            return True
+        # Map common aliases EN/ES
+        alias = {
+            "bodyweight": {"bodyweight", "peso corporal"},
+            "dumbbells": {"dumbbells", "mancuernas"},
+            "barbell": {"barbell", "barra"},
+            "kettlebell": {"kettlebell"},
+            "bands": {"bands", "band", "banda", "bandas", "resistance band"},
+            "machine": {"machine", "máquina", "maquina", "smith machine", "machine smith"},
+            "cable": {"cable", "polea"},
+        }
+        allowed_norm = set()
+        for k in allowed_equipment:
+            k_norm = _norm(k)
+            for base, vals in alias.items():
+                if k_norm in {_norm(v) for v in vals} or k_norm == base:
+                    allowed_norm.update({_norm(v) for v in vals})
+                    allowed_norm.add(base)
+        if not allowed_norm:
+            allowed_norm = {_norm(x) for x in allowed_equipment}
+        return _norm(eq) in allowed_norm
+
+    # primary filters
+    filtered = [
+        r for r in cands
+        if _norm(r.name) != _norm(base_ex.exercise_name)
+        and _avoid_impact(r.name)
+        and _allowed_eq(getattr(r, "equipment", None))
+    ]
+
+    def _overlap(a: Iterable[str] | None, b: Iterable[str] | None) -> bool:
+        if not a or not b:
+            return False
+        sa = { _norm(x) for x in a if x }
+        sb = { _norm(x) for x in b if x }
+        return len(sa & sb) > 0
+
+    with_overlap: list[models.ExerciseCatalog] = []
+    same_category: list[models.ExerciseCatalog] = []
+    if base_row:
+        for r in filtered:
+            if _overlap(getattr(r, "muscle_groups", None), getattr(base_row, "muscle_groups", None)):
+                with_overlap.append(r)
+            elif getattr(r, "category", None) and getattr(base_row, "category", None) and _norm(r.category) == _norm(base_row.category):
+                same_category.append(r)
+
+    # choose bucket
+    bucket = with_overlap or same_category or filtered
+    if bucket:
+        bucket_sorted = sorted(bucket, key=lambda x: _norm(x.name))
+        idx = order_index % len(bucket_sorted)
+        return bucket_sorted[idx]
+
+    # fallback keyword-based alternatives
+    for alt_name in _keyword_alternatives(base_ex.exercise_name):
+        if _avoid_impact(alt_name):
+            # Try resolve to catalog entry by name
+            row = (
+                db.query(Exercise)
+                .filter(func.lower(Exercise.name) == _norm(alt_name))
+                .first()
+            )
+            if row and _allowed_eq(getattr(row, "equipment", None)):
+                return row
+
+    return None

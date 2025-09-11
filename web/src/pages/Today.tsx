@@ -14,6 +14,9 @@ import { loadAchievements } from '../utils/achievements';
 import AchievementBadge from '../components/AchievementBadge';
 import { Dumbbell, CheckCircle, Flame, Scale } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
+import Card from '../components/ui/card';
+import Button from '../components/ui/button';
+import { Sparkles } from 'lucide-react';
 
 export default function TodayPage() {
   const date = today();
@@ -40,38 +43,44 @@ export default function TodayPage() {
 
   if (!routineQuery.data && (!nutritionQuery.data || nutritionQuery.data.meals.length === 0)) {
     return (
-      <div className="p-3">
-        <div className="space-y-2 rounded border bg-white p-4 shadow-sm dark:bg-gray-800">
-          <p>No tienes actividades hoy. ¡Empieza creando tu plan!</p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link
-              to="/workout/generate"
-              role="button"
-              aria-label="Crear rutina"
-              tabIndex={0}
-              className="min-h-[44px] rounded bg-blue-500 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
-            >
-              Crear rutina
-            </Link>
-            <Link
-              to="/nutrition/today"
-              role="button"
-              aria-label="Añadir comida"
-              tabIndex={0}
-              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
-            >
-              Añadir comida
-            </Link>
-            <Link
-              to="/progress"
-              role="button"
-              aria-label="Registrar peso"
-              tabIndex={0}
-              className="min-h-[44px] rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
-            >
-              Registrar peso
-            </Link>
-          </div>
+      <div className="p-4 md:p-8">
+        <div className="mx-auto max-w-3xl">
+          <PageHeader className="mb-4 animate-fade-in">
+            <h1 className="text-2xl font-semibold">Resumen de hoy</h1>
+            <p className="text-sm opacity-90">No tienes actividades hoy. ¡Empieza creando tu plan!</p>
+          </PageHeader>
+          <Card className="text-center animate-fade-in" style={{ animationDelay: '80ms' }}>
+            <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-planifit-50 text-planifit-600">
+              <Dumbbell className="h-8 w-8" />
+            </div>
+            <p className="mb-1 text-lg font-medium">No tienes actividades hoy</p>
+            <p className="mx-auto mb-4 max-w-md text-sm opacity-80">Crea tu rutina o añade tu primera comida.</p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Link to="/workout/generate" role="button" aria-label="Crear rutina" tabIndex={0}>
+                <Button className="inline-flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" /> Crear rutina
+                </Button>
+              </Link>
+              <Link
+                to="/nutrition/today"
+                role="button"
+                aria-label="Añadir comida"
+                tabIndex={0}
+                className="inline-flex items-center gap-2 rounded-md border px-4 py-2 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500"
+              >
+                <Flame className="h-4 w-4" /> Añadir comida
+              </Link>
+              <Link
+                to="/progress"
+                role="button"
+                aria-label="Registrar peso"
+                tabIndex={0}
+                className="inline-flex items-center gap-2 rounded-md border px-4 py-2 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500"
+              >
+                <Scale className="h-4 w-4" /> Registrar peso
+              </Link>
+            </div>
+          </Card>
         </div>
       </div>
     );
@@ -115,7 +124,7 @@ export default function TodayPage() {
     }
   }
 
-  const kcalVal = nutritionQuery.data?.targets?.calories ?? '-';
+  const kcalVal = nutritionQuery.data?.targets?.calories_target ?? '-';
   const entries = weightQuery.data ?? [];
   const delta =
     entries.length > 1 ? entries[entries.length - 1].value - entries[0].value : 0;
@@ -129,22 +138,47 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-3 p-3 md:p-6">
-      <PageHeader>
-        <h1 className="text-xl font-semibold">Resumen de hoy</h1>
-        <p className="text-sm opacity-90">Tu actividad y nutrición de un vistazo</p>
+      <PageHeader className="animate-fade-in">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Resumen de hoy</h1>
+            <p className="text-sm opacity-90">Tu actividad y nutrición de un vistazo</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 rounded-md bg-white/10 px-3 py-1 text-sm animate-slide-up" style={{ animationDelay: '60ms' }}>
+              <Dumbbell className="h-4 w-4" /> Sesiones {sessionsVal}
+            </div>
+            <div className="flex items-center gap-2 rounded-md bg-white/10 px-3 py-1 text-sm animate-slide-up" style={{ animationDelay: '120ms' }}>
+              <CheckCircle className="h-4 w-4" /> Adherencia {adherenceVal}
+            </div>
+            <div className="flex items-center gap-2 rounded-md bg-white/10 px-3 py-1 text-sm animate-slide-up" style={{ animationDelay: '180ms' }}>
+              <Flame className="h-4 w-4" /> Meta {kcalVal} kcal
+            </div>
+          </div>
+        </div>
       </PageHeader>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiCard title="Sesiones semana" value={sessionsVal} icon={<Dumbbell className="h-4 w-4" />} />
-        <KpiCard title="Adherencia" value={adherenceVal} icon={<CheckCircle className="h-4 w-4" />} />
-        <KpiCard title="Meta kcal hoy" value={kcalVal} icon={<Flame className="h-4 w-4" />} />
-        <KpiCard title="Delta peso 30d" value={deltaStr} icon={<Scale className="h-4 w-4" />} />
+        <div className="animate-slide-up" style={{ animationDelay: '80ms' }}>
+          <KpiCard title="Sesiones semana" value={sessionsVal} icon={<Dumbbell className="h-4 w-4" />} />
+        </div>
+        <div className="animate-slide-up" style={{ animationDelay: '120ms' }}>
+          <KpiCard title="Adherencia" value={adherenceVal} icon={<CheckCircle className="h-4 w-4" />} />
+        </div>
+        <div className="animate-slide-up" style={{ animationDelay: '160ms' }}>
+          <KpiCard title="Meta kcal hoy" value={kcalVal} icon={<Flame className="h-4 w-4" />} />
+        </div>
+        <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <KpiCard title="Delta peso 30d" value={deltaStr} icon={<Scale className="h-4 w-4" />} />
+        </div>
       </div>
       {adherenceVal !== '-' && (
-        <div className="rounded bg-orange-100 p-2 text-sm">🔥 {adherenceVal} semana</div>
+        <Card className="animate-fade-in" style={{ animationDelay: '220ms' }}>
+          <div className="text-sm">🔥 {adherenceVal} semana</div>
+        </Card>
       )}
-      <p className="text-sm">{microcopy}</p>
+      <p className="text-sm animate-fade-in" style={{ animationDelay: '260ms' }}>{microcopy}</p>
       {achievements.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1 animate-fade-in" style={{ animationDelay: '300ms' }}>
           <h3 className="text-sm font-semibold">Logros recientes</h3>
           <div className="flex gap-2">
             {achievements.map((a) => (
@@ -153,11 +187,19 @@ export default function TodayPage() {
           </div>
         </div>
       )}
-      <TodayReminders />
+      <div className="animate-fade-in" style={{ animationDelay: '340ms' }}>
+        <TodayReminders />
+      </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <TodayWorkoutCard />
-        <TodayNutritionCard />
-        <QuickWeighCard />
+        <div className="animate-slide-up" style={{ animationDelay: '120ms' }}>
+          <TodayWorkoutCard />
+        </div>
+        <div className="animate-slide-up" style={{ animationDelay: '160ms' }}>
+          <TodayNutritionCard />
+        </div>
+        <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <QuickWeighCard />
+        </div>
       </div>
     </div>
   );

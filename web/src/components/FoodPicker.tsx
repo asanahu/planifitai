@@ -24,7 +24,6 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
   const [details, setDetails] = React.useState<FoodDetails | null>(null);
   const [qty, setQty] = React.useState<number>(defaultQty);
   const [unit, setUnit] = React.useState<Unit>(defaultUnit);
-  // derived flag whether portion is estimated
   const listboxId = React.useId();
 
   React.useEffect(() => {
@@ -40,7 +39,6 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
       setError(null);
       try {
         const res = await searchFoods(dq, 1, 10);
-        // dedupe by id
         const map = new Map(res.map((h) => [h.id, h]));
         if (!closed) setHits(Array.from(map.values()));
       } catch (e) {
@@ -100,7 +98,6 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
   async function addItem() {
     if (!sel) return;
     await addMealItemFlexible(String(mealId), { food_id: sel.id, quantity: qty, unit });
-    // reset & notify
     setQ('');
     setHits([]);
     setSel(null);
@@ -214,3 +211,5 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
     </div>
   );
 }
+
+

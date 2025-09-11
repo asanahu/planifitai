@@ -96,11 +96,19 @@ def get_me(
         db.refresh(profile)
     return ok(
         profile_schemas.MeProfileOut(
+            first_name=profile.first_name if profile else None,
+            last_name=profile.last_name if profile else None,
+            sex=profile.sex if profile else None,
             age=profile.age if profile else None,
             height_cm=float(profile.height_cm) if profile and profile.height_cm is not None else None,
             weight_kg=float(profile.weight_kg) if profile and profile.weight_kg is not None else None,
             goal=_map_goal_db_to_api(profile.goal) if profile else None,
             activity_level=_map_activity_db_to_api(profile.activity_level) if profile else None,
+            training_days_per_week=profile.training_days_per_week if profile else None,
+            time_per_session_min=profile.time_per_session_min if profile else None,
+            equipment_access=profile.equipment_access if profile else None,
+            dietary_preference=profile.dietary_preference if profile else None,
+            allergies=profile.allergies if profile else None,
             profile_completed=completed,
         )
     )
@@ -128,11 +136,30 @@ def put_me_profile(
             user_id=current_user.id,
         )
 
+    # Optional identity
+    if getattr(payload, "first_name", None) is not None:
+        profile.first_name = payload.first_name
+    if getattr(payload, "last_name", None) is not None:
+        profile.last_name = payload.last_name
+    if getattr(payload, "sex", None) is not None:
+        profile.sex = payload.sex
+
     profile.age = payload.age
     profile.height_cm = float(payload.height_cm)
     profile.weight_kg = float(payload.weight_kg)
     profile.goal = goal_db
     profile.activity_level = activity_db
+    # Optional planning preferences
+    if getattr(payload, "training_days_per_week", None) is not None:
+        profile.training_days_per_week = payload.training_days_per_week
+    if getattr(payload, "time_per_session_min", None) is not None:
+        profile.time_per_session_min = payload.time_per_session_min
+    if getattr(payload, "equipment_access", None) is not None:
+        profile.equipment_access = payload.equipment_access
+    if getattr(payload, "dietary_preference", None) is not None:
+        profile.dietary_preference = payload.dietary_preference
+    if getattr(payload, "allergies", None) is not None:
+        profile.allergies = payload.allergies
     profile.profile_completed = _is_completed(profile)
 
     db.add(profile)
@@ -141,11 +168,19 @@ def put_me_profile(
 
     return ok(
         profile_schemas.MeProfileOut(
+            first_name=profile.first_name,
+            last_name=profile.last_name,
+            sex=profile.sex,
             age=profile.age,
             height_cm=float(profile.height_cm) if profile.height_cm is not None else None,
             weight_kg=float(profile.weight_kg) if profile.weight_kg is not None else None,
             goal=_map_goal_db_to_api(profile.goal),
             activity_level=_map_activity_db_to_api(profile.activity_level),
+            training_days_per_week=profile.training_days_per_week,
+            time_per_session_min=profile.time_per_session_min,
+            equipment_access=profile.equipment_access,
+            dietary_preference=profile.dietary_preference,
+            allergies=profile.allergies,
             profile_completed=profile.profile_completed,
         )
     )

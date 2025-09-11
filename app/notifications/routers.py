@@ -179,12 +179,18 @@ def schedule_weigh_in_endpoint(
 
 @router.get("/", response_model=list[schemas.NotificationOut])
 def list_notifications_endpoint(
-    status: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="Filter by status; use 'unread' for unread items"),
     limit: int = 50,
     offset: int = 0,
+    auto: bool = Query(False, description="Ensure automatic daily reminders exist"),
     current_user: UserContext = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if auto:
+        try:
+            services.ensure_auto_daily_reminders(db, current_user.id)
+        except Exception:
+            logger.exception("ensure_auto_daily_reminders failed")
     notifs = crud.list_notifications(
         db, current_user.id, status=status, limit=limit, offset=offset
     )

@@ -20,6 +20,7 @@ export interface RoutineDay {
 export interface Routine {
   id: string;
   name: string;
+  start_date?: string;
   days: RoutineDay[];
 }
 
@@ -34,6 +35,8 @@ export interface RoutineCreatePayload {
   }[];
 }
 
+function pad(n: number): string { return String(n).padStart(2, '0'); }
+
 function computeDateFromWeekday(weekday: number): string {
   const now = new Date();
   // Compute Monday of current week
@@ -45,18 +48,33 @@ function computeDateFromWeekday(weekday: number): string {
   const d = new Date(monday);
   d.setDate(monday.getDate() + weekday);
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const m = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
   return `${y}-${m}-${dd}`;
 }
 
-function adaptRoutine(r: any): Routine {
+function computeDateFromStart(startDateISO?: string, weekday?: number): string | undefined {
+  if (!startDateISO || typeof weekday !== 'number') return undefined;
+  const baseStr = startDateISO.slice(0, 10);
+  const [y, m, d] = baseStr.split('-').map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return undefined;
+  const base = new Date(y, m - 1, d);
+  const dt = new Date(base);
+  dt.setDate(base.getDate() + weekday);
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+}
+
+export function adaptRoutine(r: any): Routine {
   return {
     id: String(r.id),
     name: r.name,
+    start_date: r.start_date,
     days: (r.days || []).map((d: any) => ({
       id: String(d.id),
-      date: d.date || computeDateFromWeekday(typeof d.weekday === 'number' ? d.weekday : 0),
+      date:
+        d.date ||
+        computeDateFromStart(r.start_date, typeof d.weekday === 'number' ? d.weekday : 0) ||
+        computeDateFromWeekday(typeof d.weekday === 'number' ? d.weekday : 0),
       exercises: (d.exercises || []).map((e: any) => ({
         id: String(e.id),
         name: e.exercise_name || e.name || 'Exercise',
@@ -88,29 +106,70 @@ export async function getRoutine(id: string) {
 export async function getPlannedDayFor(date: Date) {
   const routines = await getUserRoutines();
   const target = date.toISOString().slice(0, 10);
+  if (routines.length === 0) return null as any;
+
+  // 1) Exact match today
   for (const routine of routines) {
     const day = routine.days.find((d) => d.date === target);
     if (day) {
-      // Compute next upcoming session within the current week
-      const future = routine.days
-        .map((d) => d.date)
-        .filter((d) => d > target)
-        .sort();
+      const weekEnd = (() => {
+        const d = new Date(target + 'T00:00:00Z');
+        const end = new Date(d);
+        end.setDate(d.getDate() + (7 - ((d.getDay() + 6) % 7)) - 1); // Sunday of this week
+        return end.toISOString().slice(0, 10);
+      })();
+      const future = routine.days.map((d) => d.date).filter((d) => d > target && d <= weekEnd).sort();
       const next = future[0];
       return { routine, day, next, isFallback: false } as any;
     }
   }
-  // Fallback: return the latest routine with its first day so Today can show progress/adherence
-  if (routines.length > 0) {
-    const routine = routines[routines.length - 1];
-    // Determine next session: first day in the future this week, otherwise the earliest day next week
-    const days = routine.days.map((d) => d.date).sort();
-    const future = days.filter((d) => d > target);
-    let next = future[0] || days[0] || undefined;
-    // If next is in the past (no future days), we consider it next week (add +7d when presenting)
-    return { routine, day: undefined, next, isFallback: true } as any;
+
+  // 2) Next within this week across all routines (prefer current week before jumping)
+  const weekBounds = (() => {
+    const d = new Date(target + 'T00:00:00Z');
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { start: monday.toISOString().slice(0, 10), end: sunday.toISOString().slice(0, 10) };
+  })();
+  type Ref = { routine: Routine; day: RoutineDay };
+  const futureThisWeek: Ref[] = [];
+  for (const routine of routines) {
+    for (const d of routine.days) {
+      if (d.date > target && d.date <= weekBounds.end) futureThisWeek.push({ routine, day: d });
+    }
   }
-  return null;
+  if (futureThisWeek.length > 0) {
+    futureThisWeek.sort((a, b) => (a.day.date < b.day.date ? -1 : a.day.date > b.day.date ? 1 : 0));
+    const { routine, day } = futureThisWeek[0];
+    return { routine, day: undefined, next: day.date, isFallback: true } as any;
+  }
+
+  // 3) Otherwise, next across all
+  const futureAll: Ref[] = [];
+  for (const routine of routines) {
+    for (const d of routine.days) {
+      if (d.date > target) futureAll.push({ routine, day: d });
+    }
+  }
+  if (futureAll.length > 0) {
+    futureAll.sort((a, b) => (a.day.date < b.day.date ? -1 : a.day.date > b.day.date ? 1 : 0));
+    const { routine, day } = futureAll[0];
+    return { routine, day: undefined, next: day.date, isFallback: true } as any;
+  }
+
+  // 4) No future sessions; return earliest available overall
+  const all: Ref[] = [];
+  for (const routine of routines) {
+    for (const d of routine.days) all.push({ routine, day: d });
+  }
+  if (all.length > 0) {
+    all.sort((a, b) => (a.day.date < b.day.date ? -1 : a.day.date > b.day.date ? 1 : 0));
+    const { routine, day } = all[0];
+    return { routine, day: undefined, next: day.date, isFallback: true } as any;
+  }
+  return null as any;
 }
 
 export function completeExercise(routineId: string, dayId: string, exerciseId: string, dayDate?: string) {
@@ -145,8 +204,17 @@ export function uncompleteExercise(routineId: string, dayId: string, exerciseId:
 
 export function createRoutine(payload: RoutineCreatePayload) {
   // Adapt payload to backend schema (RoutineCreate -> RoutineDayCreate -> RoutineExerciseCreate)
+  // Set start_date to Monday of current week (00:00:00Z) so UI can derive dates per week
+  const now = new Date();
+  const day = now.getDay();
+  const mondayOffset = (day + 6) % 7;
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - mondayOffset);
+  const start_date = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}T00:00:00Z`;
   const adapted = {
     name: payload.name,
+    start_date,
     days: payload.days.map((d, i) => ({
       weekday: d.weekday,
       order_index: i,
@@ -201,4 +269,13 @@ export function addExerciseToDay(
     notes: exercise.notes,
   });
   return apiFetch(`/routines/${routineId}/days/${dayId}/exercises`, { method: 'POST', body });
+}
+
+export async function createNextWeekRoutine(routineId: string | number) {
+  const r = await apiFetch<any>(`/routines/${routineId}/next-week`, { method: 'POST' });
+  return adaptRoutine(r);
+}
+
+export function deleteRoutine(routineId: string | number) {
+  return apiFetch<void>(`/routines/${routineId}`, { method: 'DELETE' });
 }

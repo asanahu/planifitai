@@ -95,3 +95,82 @@ def generate_plan_v2(
 
     final.meta.setdefault("warnings", [])
     return final
+
+
+def advance_plan_one_week(prev: PlanDTO, use_ai: bool = True) -> PlanDTO:
+    """Genera el plan de la siguiente semana a partir de un PlanDTO previo.
+
+    Estrategia simple de progresión:
+    - Si un ejercicio tiene ``sets``: +1 set hasta máximo 5.
+    - Si tiene ``reps`` (y no tiene sets definidos): +1 rep (máx. 20).
+    - Si tiene ``seconds``: +5s (máx. 120s).
+
+    Luego, opcionalmente, se refina con IA (simulada) para variaciones menores.
+    """
+    progressed_days: list[DayPlan] = []
+
+    for day in prev.days:
+        new_blocks: list[Block] = []
+        for block in day.blocks:
+            new_exercises: list[Exercise] = []
+            for ex in block.exercises:
+                sets = ex.sets
+                reps = ex.reps
+                seconds = ex.seconds
+
+                if sets is not None:
+                    sets = min(5, (sets or 1) + 1)
+                elif reps is not None:
+                    reps = min(20, max(1, reps + 1))
+                elif seconds is not None:
+                    seconds = min(120, max(5, seconds + 5))
+
+                new_exercises.append(
+                    Exercise(name=ex.name, sets=sets, reps=reps, seconds=seconds)
+                )
+
+            new_blocks.append(
+                Block(type=block.type, duration=block.duration, exercises=new_exercises)
+            )
+
+        progressed_days.append(DayPlan(day=day.day, blocks=new_blocks))
+
+    prelim = PlanDTO(
+        objective=prev.objective,
+        level=prev.level,
+        frequency=prev.frequency,
+        session_minutes=prev.session_minutes,
+        days=progressed_days,
+        meta={**(prev.meta or {})},
+    )
+
+    # Actualiza meta con la semana
+    week = 1
+    try:
+        week = int(prelim.meta.get("week", 1))
+    except Exception:
+        week = 1
+    prelim.meta["week"] = week + 1
+
+    final = prelim
+    if use_ai:
+        dto_dict = prelim.model_dump()
+        context = {
+            "objective": prelim.objective,
+            "level": prelim.level.value if isinstance(prelim.level, Level) else str(prelim.level),
+            "session_minutes": prelim.session_minutes,
+            "restrictions": [],
+            "week": prelim.meta.get("week"),
+        }
+        refined = refine_with_ai(dto_dict, context)
+        try:
+            final = PlanDTO.model_validate(refined)
+            final.meta.setdefault("source", "ai")
+        except Exception:
+            final = prelim
+            final.meta.setdefault("source", "rules")
+    else:
+        final.meta.setdefault("source", "rules")
+
+    final.meta.setdefault("warnings", [])
+    return final

@@ -9,10 +9,10 @@ export function Notifications() {
   const qc = useQueryClient();
   const { data } = useQuery<Notification[]>({
     queryKey: ['notifications', date],
-    queryFn: () => listNotifications({ date, state: 'scheduled' }),
+    queryFn: () => listNotifications({ status: 'unread', limit: 100, auto: true }),
   });
   const mutation = useMutation({
-    mutationFn: (id: string) => markAsRead(id),
+    mutationFn: (id: number) => markAsRead(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
   const markAll = useMutation({
@@ -44,14 +44,26 @@ export function Notifications() {
         </button>
       </div>
       <ul className="space-y-2 text-sm">
-        {data.map((n) => (
-          <li key={n.id} className="flex justify-between rounded border p-2">
-            <span>{n.message}</span>
-            <button className="text-blue-500" onClick={() => mutation.mutate(n.id)}>
-              Leer
-            </button>
-          </li>
-        ))}
+        {data.map((n) => {
+          const when = new Date(n.scheduled_at_utc);
+          const whenTxt = when.toLocaleString('es-ES', {
+            weekday: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          return (
+            <li key={n.id} className="flex items-center justify-between gap-3 rounded border p-2">
+              <div>
+                <div className="font-medium">{n.title}</div>
+                <div className="opacity-80">{n.body}</div>
+                <div className="text-xs opacity-60">{whenTxt}</div>
+              </div>
+              <button className="text-blue-500" onClick={() => mutation.mutate(n.id)}>
+                Marcar como visto
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

@@ -3,18 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { generateWorkoutPlanAI } from '../../api/ai';
 import { mapAiWorkoutPlanToRoutine } from './aiMap';
-import { createRoutine, setActiveRoutine, type RoutineCreatePayload, listRoutines } from '../../api/routines';
+import { createRoutine, setActiveRoutine, type RoutineCreatePayload, listRoutines, createNextWeekRoutine, deleteRoutine } from '../../api/routines';
 import { pushToast } from '../../components/ui/Toast';
 import Overlay from '../../components/ui/Overlay';
 
 const WEEKDAYS = [
-  { id: 0, label: 'Lun' },
-  { id: 1, label: 'Mar' },
-  { id: 2, label: 'Mié' },
-  { id: 3, label: 'Jue' },
-  { id: 4, label: 'Vie' },
-  { id: 5, label: 'Sáb' },
-  { id: 6, label: 'Dom' },
+  { id: 0, label: 'Lunes' },
+  { id: 1, label: 'Martes' },
+  { id: 2, label: 'Miércoles' },
+  { id: 3, label: 'Jueves' },
+  { id: 4, label: 'Viernes' },
+  { id: 5, label: 'Sábado' },
+  { id: 6, label: 'Domingo' },
 ];
 
 export default function GenerateFromAI() {
@@ -83,6 +83,14 @@ export default function GenerateFromAI() {
   const mutation = useMutation({
     mutationFn: async () => {
       try {
+        // 1) Reset: borrar todas las rutinas existentes para evitar solapes de semanas
+        try {
+          const existing = await listRoutines();
+          await Promise.allSettled(existing.map((r) => deleteRoutine(r.id)));
+        } catch {
+          // continuar aunque falle alguna
+        }
+
         if (!useAI) throw new Error('disabled');
         const ai = await generateWorkoutPlanAI({
           days_per_week: selectedDays.length || 3,
@@ -108,15 +116,28 @@ export default function GenerateFromAI() {
             exercises: [{ name: 'Push Ups', reps: 10, time: 60 }],
           })),
         } satisfies RoutineCreatePayload;
+        // Intentamos borrar antes también en fallback
+        try {
+          const existing = await listRoutines();
+          await Promise.allSettled(existing.map((r) => deleteRoutine(r.id)));
+        } catch {}
         const routine = await createRoutine(fb);
         pushToast('Usando rutina por defecto', 'error');
         return routine;
       }
     },
-    onSuccess: (routine) => {
+    onSuccess: async (routine) => {
       qc.invalidateQueries({ queryKey: ['routines'] });
       qc.invalidateQueries({ queryKey: ['routine', routine.id] });
       pushToast('Rutina generada');
+      // Siempre preparamos la siguiente semana tras generar
+      try {
+        await createNextWeekRoutine(routine.id);
+        qc.invalidateQueries({ queryKey: ['routines'] });
+        pushToast('Siguiente semana preparada');
+      } catch {
+        // opcional, ignorar si falla
+      }
       navigate('/workout');
     },
     onError: () => pushToast('No se pudo generar rutina', 'error'),
@@ -185,7 +206,7 @@ export default function GenerateFromAI() {
       <button className="btn" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
         {mutation.isPending ? 'Generando rutina…' : 'Generar plan IA'}
       </button>
-      {mutation.isPending && <Overlay>Tu rutina se está generando; puede tardar unos segundos…</Overlay>}
+      {mutation.isPending && <Overlay>Tu rutina se está generando; analizando tu perfil, material disponible y lesiones, puede tardar unos minutos... ¡No cierres esta ventana!</Overlay>}
     </div>
   );
 }

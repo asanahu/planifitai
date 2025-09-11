@@ -264,3 +264,91 @@ def ensure_notifications(
         if not first_local:
             first_local = dt_local
     return created, first_local
+
+
+# ---------------------------------------------------------------------------
+# Auto daily reminders (on-demand)
+# ---------------------------------------------------------------------------
+
+
+def ensure_auto_daily_reminders(db: Session, user_id: int) -> int:
+    """Create simple, deduplicated reminders for today's key actions.
+
+    - If no meals logged today: remind to register meals
+    - If no weight entry today: remind to register weight
+
+    Uses the user's preferred timezone (or default) to compute "today".
+    Returns the number of notifications created.
+    """
+    pref = crud.get_preferences(db, user_id)
+    tz = pref.tz if pref and pref.tz else DEFAULT_TZ
+    now_local = datetime.now(ZoneInfo(tz))
+    today_local = now_local.date()
+
+    created = 0
+
+    # Meals check
+    try:
+        from app.nutrition import models as nut_models
+    except Exception:  # pragma: no cover - defensive import
+        nut_models = None
+    if nut_models is not None:
+        has_meals = (
+            db.query(nut_models.NutritionMeal)
+            .filter(
+                nut_models.NutritionMeal.user_id == user_id,
+                nut_models.NutritionMeal.date == today_local,
+            )
+            .first()
+            is not None
+        )
+        if not has_meals:
+            dedupe_key = f"auto:meals:{user_id}:{today_local.isoformat()}"
+            notif = schemas.NotificationCreate(
+                user_id=user_id,
+                category=models.NotificationCategory.NUTRITION,
+                type=models.NotificationType.MEAL_REMINDER,
+                title="Registra tus comidas",
+                body="Aún no has registrado comidas hoy.",
+                payload={"date": today_local.isoformat(), "tz": tz},
+                scheduled_at_utc=now_local.astimezone(ZoneInfo("UTC")),
+                dedupe_key=dedupe_key,
+            )
+            row = crud.create_notification(db, notif)
+            # Mark delivered in-app for visibility
+            dispatch_notification(db, row.id)
+            created += 1
+
+    # Weight check
+    try:
+        from app.progress import models as prog_models
+    except Exception:  # pragma: no cover - defensive import
+        prog_models = None
+    if prog_models is not None:
+        weight_exists = (
+            db.query(prog_models.ProgressEntry)
+            .filter(
+                prog_models.ProgressEntry.user_id == user_id,
+                prog_models.ProgressEntry.date == today_local,
+                prog_models.ProgressEntry.metric == prog_models.MetricEnum.weight,
+            )
+            .first()
+            is not None
+        )
+        if not weight_exists:
+            dedupe_key = f"auto:weight:{user_id}:{today_local.isoformat()}"
+            notif = schemas.NotificationCreate(
+                user_id=user_id,
+                category=models.NotificationCategory.PROGRESS,
+                type=models.NotificationType.PROGRESS_DAILY,
+                title="Registra tu peso",
+                body="Aún no has registrado tu peso hoy.",
+                payload={"date": today_local.isoformat(), "tz": tz},
+                scheduled_at_utc=now_local.astimezone(ZoneInfo("UTC")),
+                dedupe_key=dedupe_key,
+            )
+            row = crud.create_notification(db, notif)
+            dispatch_notification(db, row.id)
+            created += 1
+
+    return created

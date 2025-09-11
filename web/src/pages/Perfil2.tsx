@@ -1,4 +1,4 @@
-﻿import { useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -63,7 +63,7 @@ export default function PerfilPage() {
     onError: (e: any) => setErrorMsg(e?.message || 'Error al guardar'),
   });
 
-  if (isLoading && !me) return <div className="p-4">Cargando…</div>;
+  if (isLoading && !me) return <div className="p-4">Cargando...</div>;
 
   const onSubmit = (data: FormData) => {
     setErrorMsg(null);
@@ -74,7 +74,7 @@ export default function PerfilPage() {
     <div className="mx-auto max-w-2xl space-y-4 p-6">
       <PageHeader>
         <h1 className="text-xl font-semibold">Tu perfil</h1>
-        <p className="text-sm opacity-90">Completar tu perfil desbloquea PlanifitAI</p>
+        <p className="text-sm opacity-90">Completar tu perfil mejora tus planes</p>
       </PageHeader>
 
       <form onSubmit={handleSubmit(onSubmit)} className="relative grid grid-cols-[180px_minmax(0,1fr)] gap-4">
@@ -99,6 +99,7 @@ export default function PerfilPage() {
             <option value="other">Otro / Prefiero no decir</option>
           </select>
         </div>
+
         <label className="self-center" htmlFor="age">Edad</label>
         <div>
           <input id="age" aria-label="Edad" type="number" className="w-full rounded-2xl shadow border p-2" {...register('age', { valueAsNumber: true })} />
@@ -107,7 +108,7 @@ export default function PerfilPage() {
 
         <label className="self-center" htmlFor="height_cm">Altura (cm)</label>
         <div>
-          <input id="height_cm" aria-label="Altura en centímetros" type="number" className="w-full rounded-2xl shadow border p-2" {...register('height_cm', { valueAsNumber: true })} />
+          <input id="height_cm" aria-label="Altura en centimetros" type="number" className="w-full rounded-2xl shadow border p-2" {...register('height_cm', { valueAsNumber: true })} />
           {errors.height_cm && <p className="text-red-500 text-sm">{errors.height_cm.message}</p>}
         </div>
 
@@ -123,7 +124,7 @@ export default function PerfilPage() {
             <option value="" disabled>Selecciona tu objetivo</option>
             <option value="lose_weight">Perder peso</option>
             <option value="maintain">Mantener</option>
-            <option value="gain_muscle">Ganar músculo</option>
+            <option value="gain_muscle">Ganar musculo</option>
           </select>
           {errors.goal && <p className="text-red-500 text-sm">{errors.goal.message}</p>}
         </div>
@@ -138,20 +139,58 @@ export default function PerfilPage() {
             <option value="active">Activa - 5-6 entrenamientos/semana</option>
             <option value="very_active">Muy activa - 7+ entrenamientos/semana</option>
           </select>
+          <p className="text-xs mt-1 opacity-80">Usamos esto para ajustar tu volumen de entrenamiento y calorias objetivo.</p>
           {errors.activity_level && <p className="text-red-500 text-sm">{errors.activity_level.message}</p>}
+        </div>
+
+        <label className="self-center" htmlFor="training_days_per_week">Dias/semana</label>
+        <div>
+          <input id="training_days_per_week" aria-label="Dias de entrenamiento por semana" type="number" min={0} max={7} className="w-full rounded-2xl shadow border p-2" {...register('training_days_per_week', { valueAsNumber: true })} />
+        </div>
+
+        <label className="self-center" htmlFor="time_per_session_min">Tiempo por sesion (min)</label>
+        <div>
+          <input id="time_per_session_min" aria-label="Tiempo por sesion en minutos" type="number" min={10} max={240} className="w-full rounded-2xl shadow border p-2" {...register('time_per_session_min', { valueAsNumber: true })} />
+        </div>
+
+        <label className="self-center" htmlFor="equipment_access">Equipo disponible</label>
+        <div>
+          <select id="equipment_access" aria-label="Equipo disponible" className="w-full rounded-2xl shadow border p-2" defaultValue="" {...register('equipment_access')}>
+            <option value="" disabled>Selecciona equipo</option>
+            <option value="none">Sin equipo</option>
+            <option value="basic">Basico (mancuernas/bandas)</option>
+            <option value="full_gym">Gimnasio completo</option>
+          </select>
+        </div>
+
+        <label className="self-center" htmlFor="dietary_preference">Preferencia dietetica</label>
+        <div>
+          <select id="dietary_preference" aria-label="Preferencia dietetica" className="w-full rounded-2xl shadow border p-2" defaultValue="" {...register('dietary_preference')}>
+            <option value="" disabled>Selecciona</option>
+            <option value="omnivore">Omnivora</option>
+            <option value="vegetarian">Vegetariana</option>
+            <option value="vegan">Vegana</option>
+            <option value="pescatarian">Pescetariana</option>
+            <option value="keto">Keto</option>
+            <option value="none">Sin preferencia</option>
+          </select>
+        </div>
+
+        <label className="self-center" htmlFor="allergies">Alergias / intolerancias</label>
+        <div>
+          <textarea id="allergies" aria-label="Alergias e intolerancias" className="w-full rounded-2xl shadow border p-2 min-h-[80px]" {...register('allergies')} />
         </div>
 
         <div />
         <div className="flex items-center gap-3">
           <button type="submit" disabled={!isValid || mutation.isPending} className="bg-planifit-500 disabled:opacity-50 text-white px-4 py-2 rounded-2xl shadow">
-            {mutation.isPending ? 'Guardando…' : 'Guardar'}
+            {mutation.isPending ? 'Guardando...' : 'Guardar'}
           </button>
           {errorMsg && <span className="text-red-600 text-sm">{errorMsg}</span>}
         </div>
-        {mutation.isPending && <Overlay>Guardando tu perfil…</Overlay>}
+        {mutation.isPending && <Overlay>Guardando tu perfil...</Overlay>}
       </form>
     </div>
   );
 }
-
 

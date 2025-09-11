@@ -15,7 +15,14 @@ export default function GeneratePlanFromAI() {
       setMealPlan(local);
     },
     onSuccess: () => pushToast('Plan generado'),
-    onError: () => pushToast('No se pudo generar plan', 'error'),
+    onError: (err: unknown) => {
+      const e = err as { name?: string; message?: string } | undefined;
+      const isAbort = e?.name === 'AbortError' || /abort|timeout/i.test(e?.message ?? '');
+      pushToast(
+        isAbort ? 'La generación tardó demasiado y fue cancelada' : 'No se pudo generar plan',
+        'error'
+      );
+    },
   });
 
   return (
@@ -28,8 +35,9 @@ export default function GeneratePlanFromAI() {
         {mutation.isPending ? 'Generando plan…' : 'Generar plan IA'}
       </button>
       {mutation.isPending && (
-        <Overlay>Tu plan se está generando; analizando tu perfil, puede tardar unos minutos…</Overlay>
+        <Overlay>Tu plan se está generando; analizando tu perfil, puede tardar unos minutos... ¡No cierres esta ventana!</Overlay>
       )}
     </div>
   );
 }
+

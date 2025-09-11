@@ -52,6 +52,8 @@ services:
       POSTGRES_USER: planifitai
       POSTGRES_PASSWORD: planifitai
       POSTGRES_DB: planifitai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "${DB_PORT:-5432}:5432"
     networks:
@@ -77,3 +79,6 @@ services:
 networks:
   internal:
     driver: bridge
+
+volumes:
+  postgres_data:

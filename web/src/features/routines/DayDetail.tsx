@@ -3,6 +3,7 @@ import { completeExercise, uncompleteExercise, addExerciseToDay, completeDay, un
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pushToast } from '../../components/ui/Toast';
 import { useEffect, useMemo, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { generateWorkoutPlanAI } from '../../api/ai';
 import { mapAiWorkoutPlanToRoutine } from './aiMap';
 import { getExerciseCatalog, getExerciseFilters, getExerciseById } from '../../api/exercises';
@@ -259,13 +260,7 @@ export default function DayDetail({ routineId, day }: Props) {
         </h3>
         <div className="flex gap-2">
           <button
-            className="rounded bg-planifit-500 px-3 py-2 text-white text-sm"
-            onClick={() => setShowAdder(true)}
-          >
-            Añadir desde catálogo
-          </button>
-          <button
-            className="rounded border px-3 py-2 text-sm"
+            className="group inline-flex items-center gap-2 rounded bg-planifit-500 px-3 py-2 text-white text-sm transition-transform hover:scale-[1.02]"
             onClick={() => {
               setEditEquip(true);
               setPendingSuggest(true);
@@ -273,7 +268,13 @@ export default function DayDetail({ routineId, day }: Props) {
             disabled={suggestMut.isPending}
             title="Selecciona el material y guarda para sugerir"
           >
-            {suggestMut.isPending ? 'Sugeriendo…' : 'Sugerir ejercicios (IA)'}
+            <Sparkles className="h-4 w-4 animate-soft-pulse" /> {suggestMut.isPending ? 'Sugeriendo…' : 'Sugerir ejercicios (IA)'}
+          </button>
+          <button
+            className="rounded border px-3 py-2 text-sm"
+            onClick={() => setShowAdder(true)}
+          >
+            Añadir desde catálogo
           </button>
           {day.exercises.every((e) => e.completed) ? (
             <button
@@ -322,7 +323,7 @@ export default function DayDetail({ routineId, day }: Props) {
           {editEquip && (
             <div className="mt-2 flex items-center gap-2">
               <button
-                className="rounded bg-planifit-500 px-3 py-1 text-white text-sm"
+                className="inline-flex items-center gap-2 rounded bg-planifit-500 px-3 py-1 text-white text-sm"
                 onClick={async () => {
                   try {
                     // Guarda el material y, si está pendiente, sugiere
@@ -337,7 +338,7 @@ export default function DayDetail({ routineId, day }: Props) {
                 }}
                 disabled={saveEquip.isPending || suggestMut.isPending}
               >
-                {pendingSuggest ? 'Guardar y sugerir (IA)' : 'Guardar material'}
+                {pendingSuggest ? (<><Sparkles className="h-4 w-4" /> Guardar y sugerir (IA)</>) : 'Guardar material'}
               </button>
               {pendingSuggest && (
                 <button

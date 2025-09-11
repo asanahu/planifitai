@@ -26,8 +26,9 @@ def generate_workout_plan(
     payload: schemas.WorkoutPlanRequest,
     simulate: bool = Query(False),
     current_user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return services.generate_workout_plan(current_user, payload, simulate=simulate)
+    return services.generate_workout_plan(current_user, payload, db=db, simulate=simulate)
 
 
 @router.post("/generate/nutrition-plan", response_model=schemas.NutritionPlan)
@@ -35,8 +36,9 @@ def generate_nutrition_plan(
     payload: schemas.NutritionPlanRequest,
     simulate: bool = Query(False),
     current_user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return services.generate_nutrition_plan(current_user, payload, simulate=simulate)
+    return services.generate_nutrition_plan(current_user, payload, db=db, simulate=simulate)
 
 
 @router.post("/chat", response_model=schemas.ChatResponse)

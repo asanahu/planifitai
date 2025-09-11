@@ -26,7 +26,22 @@ export const seedDemoData = () => {
     write('demo:profile', null);
   }
   if (!localStorage.getItem('demo:notifications')) {
-    write('demo:notifications', []);
+    const now = new Date();
+    const mk = (mins: number, idx: number) => {
+      const d = new Date(now.getTime() + mins * 60000);
+      return {
+        id: idx + 1,
+        category: 'system',
+        type: 'custom',
+        title: 'Bienvenido a PlanifitAI',
+        body: idx === 0 ? 'Configura tus preferencias para recibir recordatorios.' : 'Recuerda hidratarte y revisar tu plan de hoy.',
+        scheduled_at_utc: d.toISOString(),
+        status: 'scheduled',
+        payload: null,
+        delivered_channels: ['inapp'],
+      } as const;
+    };
+    write('demo:notifications', [mk(5, 0), mk(60, 1)]);
   }
 };
 
@@ -96,14 +111,22 @@ export const handlers = [
     return HttpResponse.json(body);
   }),
 
-  http.get('/notifications', () => {
-    const data = read('demo:notifications', []);
-    return HttpResponse.json(data);
+  http.get('/notifications', ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const data = read('demo:notifications', [] as any[]);
+    let out = data;
+    if (status === 'unread') {
+      out = data.filter((n) => !n.read_at_utc);
+    } else if (status) {
+      out = data.filter((n) => n.status === status);
+    }
+    return HttpResponse.json(out);
   }),
-  http.patch('/notifications/:id', async ({ params }) => {
-    const data = read('demo:notifications', [] as { id: string; read?: boolean }[]);
-    const idx = data.findIndex((n) => n.id === params.id);
-    if (idx >= 0) data[idx].read = true;
+  http.patch('/notifications/:id/read', async ({ params }) => {
+    const data = read('demo:notifications', [] as any[]);
+    const idx = data.findIndex((n) => String(n.id) === String(params.id));
+    if (idx >= 0) data[idx].read_at_utc = new Date().toISOString();
     write('demo:notifications', data);
     return HttpResponse.json(data[idx]);
   }),

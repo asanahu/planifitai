@@ -29,6 +29,10 @@ export function generateWorkoutPlanAI(
     injuries: string[];
   }> = {}
 ) {
+  const simulate = (import.meta.env.VITE_AI_SIMULATE as string | undefined) === '1';
+  const timeoutMs = Number((import.meta.env.VITE_AI_TIMEOUT_MS as string | undefined) ?? '35000');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort('timeout'), Math.max(1000, timeoutMs));
   const body = {
     days_per_week: payload.days_per_week ?? payload.days ?? 3,
     equipment: payload.equipment,
@@ -37,10 +41,12 @@ export function generateWorkoutPlanAI(
     preferred_days: payload.preferred_days,
     injuries: payload.injuries,
   };
-  return apiFetch<AiWorkoutPlanJSON>('/ai/generate/workout-plan', {
+  const path = `/ai/generate/workout-plan${simulate ? '?simulate=1' : ''}`;
+  return apiFetch<AiWorkoutPlanJSON>(path, {
     method: 'POST',
     body: JSON.stringify(body),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timer));
 }
 
 export function generateNutritionPlanAI(
@@ -53,14 +59,20 @@ export function generateNutritionPlanAI(
     preferences: Record<string, string>;
   }> = {}
 ) {
+  const simulate = (import.meta.env.VITE_AI_SIMULATE as string | undefined) === '1';
+  const timeoutMs = Number((import.meta.env.VITE_AI_TIMEOUT_MS as string | undefined) ?? '35000');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort('timeout'), Math.max(1000, timeoutMs));
   const prefs = payload.preferences || (payload.prefs ? { prefs: payload.prefs.join(', ') } : undefined);
   const body = {
     days: payload.days ?? 7,
     preferences: prefs,
   };
-  return apiFetch<AiNutritionPlanJSON>('/ai/generate/nutrition-plan', {
+  const path = `/ai/generate/nutrition-plan${simulate ? '?simulate=1' : ''}`;
+  return apiFetch<AiNutritionPlanJSON>(path, {
     method: 'POST',
     body: JSON.stringify(body),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timer));
 }
 

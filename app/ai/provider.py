@@ -99,6 +99,8 @@ class OpenRouterProvider:
             self._client = OpenAI(
                 base_url=settings.OPENROUTER_BASE_URL,
                 api_key=settings.OPENROUTER_KEY,
+                timeout=settings.OPENAI_TIMEOUT_S or 30,
+                max_retries=settings.OPENAI_RETRIES,
             )
 
     def chat(

@@ -5,7 +5,7 @@ import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import DashboardPage from './pages/Dashboard';
 import TodayPage from './pages/Today';
-import PerfilPage from './pages/Perfil';
+import PerfilPage from './pages/Perfil2';
 import OnboardingWizard from './features/onboarding/OnboardingWizard';
 import WorkoutPage from './pages/Workout';
 import WorkoutGeneratePage from './pages/WorkoutGenerate';
@@ -13,7 +13,6 @@ import NutritionTodayPage from './pages/NutritionToday';
 import NutritionPlanPage from './pages/NutritionPlan';
 import ShoppingListPage from './pages/ShoppingList';
 import ExerciseCatalogPage from './pages/ExerciseCatalog';
-import AdminImportPage from './pages/AdminImport';
 const ProgressPage = lazy(() => import('./pages/Progress'));
 const ReportsPage = lazy(() => import('./pages/Reports'));
 import { Notifications } from './features/notifications/Notifications';
@@ -61,7 +60,6 @@ export default function App() {
           <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-          <Route path="/admin/import" element={<PrivateRoute><AdminImportPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/hoy" />} />
         </Routes>
       </Suspense>

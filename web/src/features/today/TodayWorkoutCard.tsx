@@ -45,9 +45,10 @@ export function TodayWorkoutCard() {
   });
 
   if (dayQuery.isLoading) return <Skeleton className="h-40" />;
-  const data = dayQuery.data && dayQuery.data.isFallback ? null : dayQuery.data;
+  const dataRaw = dayQuery.data as any;
+  const data = dataRaw && dataRaw.isFallback ? null : dataRaw;
   const fallbackInfo = dayQuery.data && (dayQuery.data as any).isFallback ? (dayQuery.data as any) : null;
-  if (!data)
+  if (!data || !data.day)
     return (
       <section className="rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
         <p className="font-medium">No tienes rutina hoy</p>
@@ -80,7 +81,7 @@ export function TodayWorkoutCard() {
       </section>
     );
 
-  const { routine, day } = data;
+  const { routine, day } = data as { routine: Routine; day: RoutineDay };
   const exercises = day.exercises;
   const allDone = exercises.every((e) => e.completed);
 

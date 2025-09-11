@@ -328,6 +328,24 @@ def read_routine(
     return ok(routine_data)
 
 
+@router.post(
+    "/{routine_id}/next-week",
+    response_model=schemas.RoutineRead,
+    summary="Generar siguiente semana de una rutina",
+    description=(
+        "Crea una nueva rutina aplicando una progresión ligera sobre la actual"
+        " (más series/repeticiones/tiempo) manteniendo los mismos días."
+    ),
+)
+def create_next_week(
+    routine_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    r = services.create_next_week_from_routine(db=db, routine_id=routine_id, user=current_user)
+    return ok(schemas.RoutineRead.model_validate(r))
+
+
 @router.get(
     "/{routine_id}/adherence", response_model=adherence_schemas.AdherenceResponse
 )

@@ -6,7 +6,6 @@ import { today } from '../../utils/date';
 import { useEffect, useState } from 'react';
 import Button from '../ui/button';
 import { getMe } from '../../api/users';
-const ADMIN_ENABLED = !!import.meta.env.VITE_ADMIN_SECRET;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -34,10 +33,10 @@ export default function MainNavbar() {
   const todayStr = today();
   const { data } = useQuery({
     queryKey: ['notifications', todayStr],
-    queryFn: () => listNotifications({ date: todayStr, state: 'scheduled|sent_today' }),
+    queryFn: () => listNotifications({ status: 'unread', limit: 50, auto: true }),
     enabled: !!user,
   });
-  const count = data?.length ?? 0;
+  const count = (data?.length ?? 0);
 
   return (
     <nav role="navigation" aria-label="Main" className="border-b bg-white dark:bg-gray-900">
@@ -60,7 +59,7 @@ export default function MainNavbar() {
                 title={!me?.profile_completed ? 'Completa tu perfil para continuar' : undefined}
                 className={`px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500 ${!me?.profile_completed ? 'pointer-events-none opacity-50' : ''}`}
               >
-                Workout
+                Entrenamiento
               </NavLink>
               <NavLink
                 to="/exercises"
@@ -102,6 +101,9 @@ export default function MainNavbar() {
               >
                 Reportes
               </NavLink>
+              <NavLink className="px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500" to="/perfil">
+                Perfil
+              </NavLink>
               <div className="relative">
                 <NavLink className="px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500" to="/notifications">
                   Notificaciones
@@ -119,11 +121,6 @@ export default function MainNavbar() {
                 <Button onClick={onInstall} aria-label="Instalar aplicación" variant="ghost">
                   Instalar
                 </Button>
-              )}
-              {ADMIN_ENABLED && (
-                <NavLink className="px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500" to="/admin/import">
-                  Admin
-                </NavLink>
               )}
               <Button onClick={logout} variant="ghost">
                 Logout

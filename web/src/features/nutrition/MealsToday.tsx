@@ -8,6 +8,7 @@ import {
   updateMeal,
   updateMealItem,
   addMealItemFlexible,
+  type Meal,
 } from '../../api/nutrition';
 import { today } from '../../utils/date';
 import FoodPicker from '../../components/FoodPicker';
@@ -17,8 +18,14 @@ export default function MealsToday() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ['nutrition-day', date], queryFn: () => getDayLog(date) });
 
-  const addMeal = useMutation({
-    mutationFn: (name: string) => createMeal(date, { name }),
+  const createDefaults = useMutation({
+    mutationFn: async () => {
+      await Promise.all([
+        createMeal({ date, meal_type: 'breakfast', name: 'Desayuno' }),
+        createMeal({ date, meal_type: 'lunch', name: 'Comida' }),
+        createMeal({ date, meal_type: 'dinner', name: 'Cena' }),
+      ]);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nutrition-day', date] }),
   });
 
@@ -33,23 +40,31 @@ export default function MealsToday() {
     return (
       <div className="space-y-2 p-3">
         <p>No hay comidas registradas</p>
-        <p className="text-sm text-gray-600">Gestiona tus comidas desde el plan semanal.</p>
-        <Link
-          to="/nutrition/plan"
-          role="button"
-          aria-label="Plan semanal"
-          tabIndex={0}
-          className="inline-block rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
-        >
-          Ir al plan semanal
-        </Link>
+        <p className="text-sm text-gray-600">Crea estructura básica para hoy o ve al plan semanal.</p>
+        <div className="flex gap-2">
+          <button
+            className="inline-block rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
+            onClick={() => createDefaults.mutate()}
+          >
+            Crear Desayuno/Comida/Cena
+          </button>
+          <Link
+            to="/nutrition/plan"
+            role="button"
+            aria-label="Plan semanal"
+            tabIndex={0}
+            className="inline-block rounded border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          >
+            Ir al plan semanal
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const consumed = data.calories ?? data.totals?.calories ?? 0;
-  const progress = data.targets?.calories
-    ? Math.min(100, Math.round((consumed / data.targets.calories) * 100))
+  const consumed = data.totals?.calories_kcal ?? 0;
+  const progress = data.targets?.calories_target
+    ? Math.min(100, Math.round((consumed / data.targets.calories_target) * 100))
     : 0;
 
   return (
@@ -60,10 +75,10 @@ export default function MealsToday() {
           <div className="h-2 bg-green-500" style={{ width: `${progress}%` }} />
         </div>
       </div>
-      {data.meals.map((meal) => (
+      {data.meals.map((meal: Meal) => (
         <div key={meal.id} className="space-y-2 rounded border p-3">
           <div className="flex justify-between">
-            <h3 className="font-semibold">{meal.name}</h3>
+            <h3 className="font-semibold">{meal.name || meal.meal_type}</h3>
             <div className="space-x-2 text-sm">
               <button
                 className="h-8 px-2"
@@ -90,30 +105,31 @@ export default function MealsToday() {
             {meal.items.map((item) => (
               <li key={item.id} className="flex justify-between">
                 <span>
-                  {item.name} ({item.quantity} {item.unit}) - {item.calories} kcal
+                  {item.food_name} ({item.serving_qty} {item.serving_unit}) - {Number(item.calories_kcal)} kcal
                 </span>
                 <div className="space-x-1 text-sm">
                   <button
                     className="h-8 px-2"
                     onClick={() => {
-                      const name = prompt('Nombre', item.name);
-                      if (!name) return;
-                      updateMealItem(item.id, { name }).then(() =>
+                      const qtyRaw = prompt('Cantidad (actual)', String(item.serving_qty));
+                      const qty = qtyRaw ? Number(qtyRaw) : undefined;
+                      if (qty == null || Number.isNaN(qty)) return;
+                      updateMealItem(meal.id, item.id, { serving_qty: qty }).then(() =>
                         qc.invalidateQueries({ queryKey: ['nutrition-day', date] })
                       );
                     }}
                   >
-                    Ed
+                    Editar
                   </button>
                   <button
                     className="h-8 px-2"
                     onClick={() =>
-                      deleteMealItem(item.id).then(() =>
+                      deleteMealItem(meal.id, item.id).then(() =>
                         qc.invalidateQueries({ queryKey: ['nutrition-day', date] })
                       )
                     }
                   >
-                    Del
+                    Borrar
                   </button>
                 </div>
               </li>
@@ -133,11 +149,11 @@ export default function MealsToday() {
                 const c = Number(prompt('Carbohidratos (g)', '0') || '0');
                 const f = Number(prompt('Grasa (g)', '0') || '0');
                 addItemFlexible.mutate({
-                  mealId: String(meal.id),
+                  mealId: meal.id,
                   payload: {
                     food_name: name,
                     serving_qty: qty,
-                    serving_unit: unitRaw === 'unidad' ? 'unidad' : unitRaw,
+                    serving_unit: unitRaw === 'unidad' ? 'unidad' : (unitRaw as any),
                     calories_kcal: kcal,
                     protein_g: p,
                     carbs_g: c,
