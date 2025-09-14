@@ -3,6 +3,7 @@
 Includes:
 - OpenAIProvider: lightweight simulated provider used in tests.
 - OpenRouterProvider: real calls to OpenRouter (DeepSeek V3.1 free).
+- OpenRouterBackupProvider: backup provider using GLM-4.5 Air free model.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from fastapi import HTTPException
+from openai import OpenAI
 
 from app.core.config import settings
 
@@ -25,6 +27,9 @@ class OpenAIProvider:
     """
 
     def __init__(self, budget_cents: int | None = None) -> None:
+        # Usar API_OPEN_AI si está disponible, sino OPENAI_API_KEY
+        api_key = getattr(settings, 'API_OPEN_AI', None) or settings.OPENAI_API_KEY
+        self._client = OpenAI(api_key=api_key)
         self._spent = defaultdict(int)
         self._budget = budget_cents or settings.AI_DAILY_BUDGET_CENTS
 
@@ -48,12 +53,30 @@ class OpenAIProvider:
 
         self._check_budget(user_id, cost=1)
 
-        if simulate or not settings.OPENAI_API_KEY:
+        if simulate:
             return {"reply": "simulated response"}
 
-        # Real implementation would go here. For this kata we raise an error
-        # so that tests use ``simulate=True``.
-        raise HTTPException(status_code=503, detail="OpenAI client not configured")
+        # Verificar rate limit antes de hacer el request
+        from app.ai.rate_limiter import check_rate_limit, record_api_request
+        
+        if not check_rate_limit():
+            raise HTTPException(status_code=429, detail="Rate limit alcanzado. Intenta más tarde.")
+        
+        try:
+            completion = self._client.chat.completions.create(
+                model="gpt-5-nano",  # Usar GPT-5-nano
+                messages=messages,
+                reasoning_effort="low",  # Parámetro específico de GPT-5-nano
+                verbosity="low"        # Parámetro específico de GPT-5-nano
+            )
+            
+            # Registrar el request exitoso
+            record_api_request()
+            
+            reply = completion.choices[0].message.content or ""
+            return {"reply": reply}
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"OpenAI error: {exc}")
 
     def embedding(self, text: str, *, simulate: bool = False) -> List[float]:
         """Return an embedding vector for ``text``.
@@ -61,11 +84,18 @@ class OpenAIProvider:
         When simulating, a deterministic small vector is returned.
         """
 
-        if simulate or not settings.OPENAI_API_KEY:
+        if simulate:
             # Very small, deterministic embedding for tests
             return [float(len(text) % 3), 0.1, 0.2]
 
-        raise HTTPException(status_code=503, detail="OpenAI client not configured")
+        try:
+            response = self._client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text,
+            )
+            return response.data[0].embedding
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"OpenAI embedding error: {exc}")
 
 
 class OpenRouterProvider:
@@ -77,6 +107,9 @@ class OpenRouterProvider:
     """
 
     def __init__(self, budget_cents: int | None = None) -> None:
+        # Usar API_OPEN_AI si está disponible, sino OPENAI_API_KEY
+        api_key = getattr(settings, 'API_OPEN_AI', None) or settings.OPENAI_API_KEY
+        self._client = OpenAI(api_key=api_key)
         self._spent = defaultdict(int)
         self._budget = budget_cents or settings.AI_DAILY_BUDGET_CENTS
         # Lazy init of SDK to avoid import cost when unused
@@ -99,8 +132,8 @@ class OpenRouterProvider:
             self._client = OpenAI(
                 base_url=settings.OPENROUTER_BASE_URL,
                 api_key=settings.OPENROUTER_KEY,
-                timeout=settings.OPENAI_TIMEOUT_S or 30,
-                max_retries=settings.OPENAI_RETRIES,
+                timeout=settings.OPENAI_TIMEOUT_S or 10,
+                max_retries=1,
             )
 
     def chat(
@@ -119,11 +152,21 @@ class OpenRouterProvider:
             if settings.OPENROUTER_APP_TITLE:
                 extra_headers["X-Title"] = settings.OPENROUTER_APP_TITLE
 
+            # Verificar rate limit antes de hacer el request
+            from app.ai.rate_limiter import check_rate_limit, record_api_request
+            
+            if not check_rate_limit():
+                raise HTTPException(status_code=429, detail="Rate limit alcanzado. Intenta más tarde.")
+            
             completion = self._client.chat.completions.create(  # type: ignore[attr-defined]
                 model=model or settings.OPENROUTER_CHAT_MODEL,
                 messages=messages,
                 extra_headers=extra_headers or None,
             )
+            
+            # Registrar el request exitoso
+            record_api_request()
+            
             reply = completion.choices[0].message.content or ""
             return {"reply": reply}
         except Exception as exc:
@@ -131,5 +174,75 @@ class OpenRouterProvider:
 
     def embedding(self, text: str, *, simulate: bool = False) -> List[float]:
         # Free DeepSeek model doesn't expose embeddings; keep simulated
+        # deterministic small vector for now.
+        return [float(len(text) % 3), 0.1, 0.2]
+
+
+class OpenRouterBackupProvider:
+    """Backup provider for OpenRouter using GLM-4.5 Air free model.
+    
+    This provider is used as a fallback when the main OpenRouterProvider
+    hits rate limits or fails. Uses the same OpenRouter infrastructure
+    but with a different API key and model.
+    """
+
+    def __init__(self, budget_cents: int | None = None) -> None:
+        # Usar API_OPEN_AI si está disponible, sino OPENAI_API_KEY
+        api_key = getattr(settings, 'API_OPEN_AI', None) or settings.OPENAI_API_KEY
+        self._client = OpenAI(api_key=api_key)
+        self._spent = defaultdict(int)
+        self._budget = budget_cents or settings.AI_DAILY_BUDGET_CENTS
+        # Lazy init of SDK to avoid import cost when unused
+        self._client = None
+
+    def _check_budget(self, user_id: int, cost: int) -> None:
+        current = self._spent[user_id]
+        if current + cost > self._budget:
+            raise HTTPException(status_code=402, detail="AI budget exceeded")
+        self._spent[user_id] = current + cost
+
+    def _ensure_client(self):
+        if self._client is None:
+            try:
+                from openai import OpenAI  # type: ignore
+            except Exception as exc:  # pragma: no cover - defensive
+                raise HTTPException(status_code=500, detail="openai SDK missing") from exc
+            if not settings.OPENROUTER_KEY2:
+                raise HTTPException(status_code=503, detail="OpenRouter backup key not configured")
+            self._client = OpenAI(
+                base_url=settings.OPENROUTER_BASE_URL,
+                api_key=settings.OPENROUTER_KEY2,
+                timeout=settings.OPENAI_TIMEOUT_S or 10,
+                max_retries=1,
+            )
+
+    def chat(
+        self, user_id: int, messages: List[Dict[str, Any]], *, simulate: bool = False, model: str | None = None
+    ) -> Dict[str, Any]:
+        self._check_budget(user_id, cost=1)
+
+        if simulate or not settings.OPENROUTER_KEY2:
+            return {"reply": "simulated backup response"}
+
+        self._ensure_client()
+        try:
+            extra_headers: Dict[str, str] = {}
+            if settings.OPENROUTER_HTTP_REFERER:
+                extra_headers["HTTP-Referer"] = settings.OPENROUTER_HTTP_REFERER
+            if settings.OPENROUTER_APP_TITLE:
+                extra_headers["X-Title"] = settings.OPENROUTER_APP_TITLE
+
+            completion = self._client.chat.completions.create(  # type: ignore[attr-defined]
+                model=model or settings.OPENROUTER_BACKUP_CHAT_MODEL,
+                messages=messages,
+                extra_headers=extra_headers or None,
+            )
+            reply = completion.choices[0].message.content or ""
+            return {"reply": reply}
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"OpenRouter backup error: {exc}")
+
+    def embedding(self, text: str, *, simulate: bool = False) -> List[float]:
+        # GLM-4.5 Air free model doesn't expose embeddings; keep simulated
         # deterministic small vector for now.
         return [float(len(text) % 3), 0.1, 0.2]

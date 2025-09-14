@@ -61,8 +61,14 @@ function formatItem(it: any): string {
 
 export function mapAiNutritionPlanToLocal(ai: AiNutritionPlanJSON): LocalMealPlan {
   const plan: LocalMealPlan = {};
+  
+  // Para 14 días, necesitamos crear claves únicas para cada día
   (ai.days ?? []).forEach((d, i) => {
-    const dayKey = toUiDayKey(d as any, i);
+    // Crear clave única para el día (día de la semana + número de semana)
+    const baseDayKey = toUiDayKey(d as any, i);
+    const weekNumber = Math.floor(i / 7) + 1;
+    const dayKey = weekNumber === 1 ? baseDayKey : `${baseDayKey}_W${weekNumber}`;
+    
     if (!plan[dayKey]) plan[dayKey] = {} as any;
     (d.meals ?? []).forEach((m, j) => {
       const mealKey = normalizeMealKey(m, j);
@@ -70,6 +76,8 @@ export function mapAiNutritionPlanToLocal(ai: AiNutritionPlanJSON): LocalMealPla
       (plan as any)[dayKey][mealKey] = items;
     });
   });
+  
+  console.log('mapAiNutritionPlanToLocal - días procesados:', Object.keys(plan));
   return plan;
 }
 

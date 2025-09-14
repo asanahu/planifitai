@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { listNotifications, markAsRead, Notification } from '../../api/notifications';
+import { listNotifications, markAsRead } from '../../api/notifications';
+import type { Notification } from '../../api/notifications';
 import { getPlannedDayFor } from '../../api/routines';
 import { getDayLog } from '../../api/nutrition';
 import { listProgress } from '../../api/progress';

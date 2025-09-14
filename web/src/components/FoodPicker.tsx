@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { addMealItemFlexible, getFoodDetails, searchFoods, type FoodDetails, type FoodHit } from '../api/nutrition';
+import { addMealItemFlexible, getFoodDetails, searchFoods, searchFoodsSmart, type FoodDetails, type FoodHit } from '../api/nutrition';
+import { getEnhancedSearchTerms } from '../api/ai';
 
 type Unit = 'g' | 'ml' | 'unidad';
 
@@ -10,15 +11,26 @@ export interface FoodPickerProps {
   onManual?: (prefill?: { name?: string }) => void;
   defaultUnit?: Unit;
   defaultQty?: number;
+  useSmartSearch?: boolean; // Nueva prop para habilitar búsqueda inteligente
+  searchContext?: string; // Contexto para la búsqueda (ej: "desayuno", "alto en proteína")
 }
 
-export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g', defaultQty = 100 }: FoodPickerProps) {
+export default function FoodPicker({ 
+  mealId, 
+  onAdded, 
+  onManual, 
+  defaultUnit = 'g', 
+  defaultQty = 100,
+  useSmartSearch = true, // Habilitar búsqueda inteligente por defecto
+  searchContext
+}: FoodPickerProps) {
   const [q, setQ] = React.useState('');
   const dq = useDebouncedValue(q, 300);
   const [hits, setHits] = React.useState<FoodHit[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [active, setActive] = React.useState(0);
+  // Estados para sugerencias deshabilitados para mejorar rendimiento
 
   const [sel, setSel] = React.useState<FoodHit | null>(null);
   const [details, setDetails] = React.useState<FoodDetails | null>(null);
@@ -31,19 +43,61 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
     async function run() {
       if (!dq) {
         setHits([]);
+        // Limpiar estados de sugerencias
         setError(null);
         setLoading(false);
         return;
       }
+      
       setLoading(true);
       setError(null);
+      
       try {
-        const res = await searchFoods(dq, 1, 10);
-        const map = new Map(res.map((h) => [h.id, h]));
-        if (!closed) setHits(Array.from(map.values()));
+        // Usar búsqueda inteligente si está habilitada
+        if (useSmartSearch) {
+          // Solo búsqueda tradicional - sin sugerencias inteligentes
+          let res = await searchFoods(dq, 1, 10);
+          let map = new Map(res.map((h) => [h.id, h]));
+          
+          // Si no hay resultados, intentar con términos mejorados de IA
+          if (res.length === 0) {
+            try {
+              const enhancedRes = await getEnhancedSearchTerms(dq, searchContext, false);
+              console.log('🔍 Términos mejorados:', enhancedRes);
+              
+              // Probar cada término mejorado
+              for (const term of enhancedRes.slice(0, 2)) { // Solo 2 términos para ser más rápido
+                if (term !== dq) { // No repetir la consulta original
+                  try {
+                    const termRes = await searchFoods(term, 1, 3); // Menos resultados por término
+                    termRes.forEach(h => map.set(h.id, h));
+                  } catch (e) {
+                    console.log('⚠️ Error buscando término:', term, e);
+                  }
+                }
+              }
+              
+              res = Array.from(map.values());
+              console.log('🔍 Resultados con términos mejorados:', res.length);
+            } catch (e) {
+              console.log('⚠️ Error obteniendo términos mejorados:', e);
+            }
+          }
+          
+          if (!closed) {
+            setHits(res);
+            // Sugerencias deshabilitadas
+          }
+        } else {
+          // Búsqueda tradicional
+          const res = await searchFoods(dq, 1, 10);
+          const map = new Map(res.map((h) => [h.id, h]));
+          if (!closed) setHits(Array.from(map.values()));
+        }
       } catch (e) {
         if (!closed) {
           setHits([]);
+        // Sugerencias deshabilitadas
           setError('search');
         }
       } finally {
@@ -54,16 +108,19 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
     return () => {
       closed = true;
     };
-  }, [dq]);
+  }, [dq, useSmartSearch, searchContext]);
 
   React.useEffect(() => {
     let stop = false;
     async function loadDetails() {
       if (!sel) return setDetails(null);
       try {
+        console.log('🔍 Cargando detalles para:', sel.id, sel.name);
         const d = await getFoodDetails(sel.id);
+        console.log('✅ Detalles cargados:', d);
         if (!stop) setDetails(d);
       } catch (e) {
+        console.error('❌ Error cargando detalles:', e);
         if (!stop) setDetails(null);
       }
     }
@@ -97,42 +154,60 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
 
   async function addItem() {
     if (!sel) return;
-    await addMealItemFlexible(String(mealId), { food_id: sel.id, quantity: qty, unit });
-    setQ('');
-    setHits([]);
-    setSel(null);
-    setDetails(null);
-    setQty(defaultQty);
-    setUnit(defaultUnit);
-    onAdded?.();
+    console.log('➕ Agregando alimento:', sel, 'Cantidad:', qty, 'Unidad:', unit);
+    try {
+      await addMealItemFlexible(String(mealId), { food_id: sel.id, quantity: qty, unit });
+      console.log('✅ Alimento agregado exitosamente');
+      setQ('');
+      setHits([]);
+        // Sugerencias deshabilitadas
+      setSel(null);
+      setDetails(null);
+      setQty(defaultQty);
+      setUnit(defaultUnit);
+      onAdded?.();
+    } catch (error) {
+      console.error('❌ Error agregando alimento:', error);
+    }
   }
+
+  // Función de sugerencias eliminada para mejorar rendimiento
 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium">Buscar alimento</label>
-      <input
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setSel(null);
-          setDetails(null);
-        }}
-        className="w-full border rounded px-3 py-2"
-        role="combobox"
-        aria-expanded={!!hits.length}
-        aria-controls={listboxId}
-        aria-autocomplete="list"
-        aria-activedescendant={hits[active]?.id || ''}
-        placeholder="Escribe para buscar (p. ej., manzana)"
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') setActive((i) => Math.min(i + 1, Math.max(hits.length - 1, 0)));
-          if (e.key === 'ArrowUp') setActive((i) => Math.max(i - 1, 0));
-          if (e.key === 'Enter' && hits[active]) setSel(hits[active]);
-        }}
-      />
+      <div className="relative">
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setSel(null);
+            setDetails(null);
+            // Sugerencias deshabilitadas
+          }}
+          onFocus={() => {
+            // No mostrar sugerencias inteligentes
+            // Sugerencias deshabilitadas
+          }}
+          className="w-full border rounded px-3 py-2"
+          role="combobox"
+          aria-expanded={!!hits.length}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={hits[active]?.id || ''}
+          placeholder={useSmartSearch ? 'Buscar alimento' : 'Buscar alimento (sin sugerencias)'}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') setActive((i) => Math.min(i + 1, Math.max(hits.length - 1, 0)));
+            if (e.key === 'ArrowUp') setActive((i) => Math.max(i - 1, 0));
+            if (e.key === 'Enter' && hits[active]) setSel(hits[active]);
+          }}
+        />
+        
+        {/* Sugerencias de IA deshabilitadas para mejorar rendimiento */}
+      </div>
       {q && (
         <ul id={listboxId} role="listbox" className="border rounded max-h-60 overflow-auto">
-          {loading && <li className="px-3 py-2 text-sm">Buscando…</li>}
+          {loading && <li className="px-3 py-2 text-sm">Buscando...</li>}
           {!loading && error && (
             <li className="px-3 py-2 text-sm">
               Sin resultados (error de búsqueda). Puedes usar «Entrada manual».
@@ -146,7 +221,10 @@ export default function FoodPicker({ mealId, onAdded, onManual, defaultUnit = 'g
               aria-selected={i === active}
               className={`px-3 py-2 cursor-pointer ${i === active ? 'bg-gray-100' : ''}`}
               onMouseEnter={() => setActive(i)}
-              onClick={() => setSel(h)}
+              onClick={() => {
+                console.log('🍎 Seleccionando alimento:', h);
+                setSel(h);
+              }}
             >
               <div className="flex justify-between">
                 <span>

@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 # --- Workout plan -----------------------------------------------------------
 
-
 class WorkoutExercise(BaseModel):
     name: str
     sets: int
@@ -73,6 +72,7 @@ class NutritionPlan(BaseModel):
 class NutritionPlanRequest(BaseModel):
     days: int = 3
     preferences: Optional[Dict[str, str]] = None
+    persist_to_db: Optional[bool] = False
 
 
 # --- Chat -------------------------------------------------------------------
@@ -127,3 +127,19 @@ class RecommendItem(BaseModel):
 
 class RecommendResponse(BaseModel):
     items: List[RecommendItem]
+
+
+# --- Smart Food Search ------------------------------------------------------
+
+
+class SmartFoodSearchRequest(BaseModel):
+    query: str
+    context: Optional[str] = None  # e.g., "breakfast", "high protein", "low carb"
+    max_suggestions: int = 5
+
+
+class SmartFoodSearchResponse(BaseModel):
+    enhanced_query: str
+    search_terms: List[str]
+    suggestions: List[str]
+    context_notes: Optional[str] = None

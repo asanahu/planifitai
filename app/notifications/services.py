@@ -146,12 +146,26 @@ def dispatch_notification(db: Session, notif_id: int) -> models.Notification | N
     notif = db.get(models.Notification, notif_id)
     if not notif:
         return None
+    
     delivered = []
     pref = crud.get_preferences(db, notif.user_id)
+    
+    # Manejar el caso donde no existen preferencias para el usuario
+    if pref is None:
+        # Crear preferencias por defecto si no existen
+        from app.notifications import schemas
+        default_prefs = schemas.NotificationPreferencesUpdate(
+            channels_inapp=True,
+            channels_email=False
+        )
+        pref = crud.upsert_preferences(db, notif.user_id, default_prefs)
+    
+    # Ahora pref no puede ser None
     if pref.channels_inapp:
         delivered.append("inapp")
     if pref.channels_email:
         delivered.append("email")
+        
     notif.status = models.NotificationStatus.SENT
     notif.sent_at_utc = datetime.utcnow()
     notif.delivered_channels = delivered

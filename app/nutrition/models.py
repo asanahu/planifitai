@@ -137,6 +137,7 @@ class NutritionTarget(Base):
 class FoodSource(str, enum.Enum):
     fdc = "fdc"
     bedca = "bedca"
+    openfoodfacts = "openfoodfacts"
 
 
 class Food(Base):

@@ -33,6 +33,16 @@ export default function WorkoutPage() {
   const routines = data || [];
   const routine = routines[routines.length > 0 ? routineIdx : 0];
   const [selected, setSelected] = useState<string>(() => today());
+  
+  // Quick stats for the header - moved before any conditional returns
+  const workouts: WeekWorkout[] = useMemo(
+    () => routine?.days?.map((d) => ({ planned: true, completed: d.exercises.every((e) => e.completed) })) || [],
+    [routine?.id, routine?.days]
+  );
+  const planned = workouts.length;
+  const done = workouts.filter((w) => w.completed).length;
+  const adh = calcWeekAdherence(workouts, []);
+  
   useEffect(() => {
     if (routines.length === 0) return;
     // Si la última parece ser "Semana siguiente", por defecto muestra la anterior
@@ -52,6 +62,8 @@ export default function WorkoutPage() {
     const def = routine.days.find((d) => d.date === t)?.date || routine.days[0]?.date || t;
     setSelected(def);
   }, [routine?.id, searchParams]);
+  
+  // Early returns after all hooks
   if (isLoading) {
     return (
       <div className="space-y-4 p-3">
@@ -60,6 +72,7 @@ export default function WorkoutPage() {
       </div>
     );
   }
+  
   if (!data || data.length === 0 || !routine) {
     return (
       <div className="p-4 md:p-8">
@@ -104,15 +117,8 @@ export default function WorkoutPage() {
       </div>
     );
   }
+  
   const day = routine.days.find((d) => d.date === selected) || routine.days[0];
-  // Quick stats for the header
-  const workouts: WeekWorkout[] = useMemo(
-    () => routine.days.map((d) => ({ planned: true, completed: d.exercises.every((e) => e.completed) })),
-    [routine?.id]
-  );
-  const planned = workouts.length;
-  const done = workouts.filter((w) => w.completed).length;
-  const adh = calcWeekAdherence(workouts, []);
   return (
     <div className="p-3 md:p-6">
       <div className="mx-auto max-w-6xl space-y-4">

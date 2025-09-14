@@ -46,7 +46,10 @@ export function getDayLog(date: string) {
 export function createMeal(payload: { date: string; meal_type: MealType; name?: string }) {
   return apiFetch(`/nutrition/meal`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      items: [] // Agregar campo items requerido
+    }),
   });
 }
 
@@ -130,9 +133,21 @@ export function searchFoods(q: string, page = 1, pageSize = 10) {
   return apiFetch<FoodHit[]>(`/nutrition/foods/search?${qs.toString()}`);
 }
 
+export function searchFoodsSmart(q: string, page = 1, pageSize = 10, context?: string, simulateAi = false) {
+  const qs = new URLSearchParams({ 
+    q, 
+    page: String(page), 
+    page_size: String(pageSize),
+    ...(context && { context }),
+    simulate_ai: String(simulateAi)
+  });
+  return apiFetch<FoodHit[]>(`/nutrition/foods/search-smart?${qs.toString()}`);
+}
+
 export function getFoodDetails(foodId: string) {
   return apiFetch<FoodDetails>(`/nutrition/foods/${foodId}`);
 }
+
 
 // Flexible item creation: food-driven or manual payloads
 // (moved flexible add above)

@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Dict
 
+import pytz
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -25,10 +26,14 @@ def create_meal(
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
-    if payload.date > date.today():
+    # Usar zona horaria de Madrid para comparación
+    madrid_tz = pytz.timezone('Europe/Madrid')
+    today_madrid = datetime.now(madrid_tz).date()
+    
+    if payload.date > today_madrid:
         return err(
             COMMON_HTTP,
-            "Future date not allowed",
+            f"Future date not allowed. Received: {payload.date}, Today (Madrid): {today_madrid}",
             status.HTTP_400_BAD_REQUEST,
         )
     meal = crud.create_meal(db, current_user.id, payload)
@@ -216,13 +221,36 @@ def search_foods_endpoint(
     return ok(hits)
 
 
+@router.get("/foods/search-smart", response_model=list[FoodHit])
+def search_foods_smart_endpoint(
+    q: str,
+    page: int = 1,
+    page_size: int = 10,
+    context: str = None,
+    simulate_ai: bool = False,
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    """Búsqueda inteligente de alimentos que usa IA para mejorar los resultados."""
+    if page_size > 25:
+        page_size = 25
+    hits = food_search.search_foods_smart(
+        db, q, page=page, page_size=page_size, 
+        user_id=current_user.id, context=context, simulate_ai=simulate_ai
+    )
+    return ok(hits)
+
+
 @router.get("/foods/{food_id}", response_model=FoodDetails)
 def get_food_details_endpoint(
     food_id: str,
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):
+    """Obtiene los detalles de un alimento específico."""
     details = food_search.get_food(db, food_id)
     if not details:
         raise HTTPException(status_code=404, detail="Food not found")
     return ok(details)
+
+

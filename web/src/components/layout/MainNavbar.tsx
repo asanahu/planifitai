@@ -70,7 +70,7 @@ export default function MainNavbar() {
                 Ejercicios
               </NavLink>
               <NavLink
-                to="/nutrition/today"
+                to="/nutrition/plan"
                 aria-disabled={!me?.profile_completed}
                 title={!me?.profile_completed ? 'Completa tu perfil para continuar' : undefined}
                 className={`px-2 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-planifit-500 ${!me?.profile_completed ? 'pointer-events-none opacity-50' : ''}`}

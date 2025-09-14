@@ -183,6 +183,125 @@ class FdcAdapter:
         )
 
 
+class OpenFoodFactsAdapter:
+    """
+    Open Food Facts adapter.
+    
+    Provides access to the collaborative food database with global coverage
+    and support for multiple languages including Spanish.
+    """
+
+    BASE_URL = "https://world.openfoodfacts.org"
+
+    def __init__(
+        self,
+        session: Optional[requests.Session] = None,
+        *,
+        timeout: float = 2.0,
+        retries: int = 1,
+    ):
+        self.timeout = timeout
+        if session is not None:
+            self.session = session
+        else:
+            s = requests.Session()
+            retry = Retry(
+                total=retries,
+                status_forcelist=[429, 500, 502, 503, 504],
+                allowed_methods=["GET"],
+                backoff_factor=0.5,
+            )
+            adapter = HTTPAdapter(max_retries=retry)
+            s.mount("http://", adapter)
+            s.mount("https://", adapter)
+            self.session = s
+
+    def search(self, query: str, page: int = 1, page_size: int = 10) -> List[FoodHit]:
+        """Search foods by name using Open Food Facts API."""
+        url = f"{self.BASE_URL}/cgi/search.pl"
+        params = {
+            "search_terms": query,
+            "search_simple": 1,
+            "action": "process",
+            "json": 1,
+            "page_size": min(page_size, 24),  # OFF max is 24
+            "page": page,
+        }
+        
+        resp = self.session.get(url, params=params, timeout=self.timeout)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        products = data.get("products", [])
+        hits: List[FoodHit] = []
+        
+        for product in products:
+            # Use barcode as source_id, fallback to _id
+            source_id = product.get("code") or product.get("_id", "")
+            name = product.get("product_name") or product.get("product_name_en", "")
+            
+            if source_id and name:
+                hits.append(
+                    FoodHit(
+                        source="openfoodfacts",
+                        source_id=str(source_id),
+                        name=name,
+                    )
+                )
+        
+        return hits
+
+    def get_details(self, source_id: str) -> FoodDetails:
+        """Fetch product details from Open Food Facts."""
+        url = f"{self.BASE_URL}/api/v0/product/{source_id}.json"
+        resp = self.session.get(url, timeout=self.timeout)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        product = data.get("product", {})
+        if not product:
+            raise requests.exceptions.HTTPError(f"Product {source_id} not found")
+        
+        name = product.get("product_name") or product.get("product_name_en", "")
+        
+        # Extract nutritional information per 100g
+        nutriments = product.get("nutriments", {})
+        
+        # Map Open Food Facts nutrients to our canonical format
+        calories_kcal = None
+        protein_g = None
+        carbs_g = None
+        fat_g = None
+        
+        # Energy (prefer kcal, fallback to kJ conversion)
+        if "energy-kcal_100g" in nutriments:
+            calories_kcal = float(nutriments["energy-kcal_100g"])
+        elif "energy_100g" in nutriments:
+            # Convert kJ to kcal (1 kcal = 4.184 kJ)
+            calories_kcal = float(nutriments["energy_100g"]) / 4.184
+        
+        # Macronutrients
+        if "proteins_100g" in nutriments:
+            protein_g = float(nutriments["proteins_100g"])
+        
+        if "carbohydrates_100g" in nutriments:
+            carbs_g = float(nutriments["carbohydrates_100g"])
+        
+        if "fat_100g" in nutriments:
+            fat_g = float(nutriments["fat_100g"])
+        
+        return FoodDetails(
+            source="openfoodfacts",
+            source_id=str(source_id),
+            name=name,
+            calories_kcal=calories_kcal,
+            protein_g=protein_g,
+            carbs_g=carbs_g,
+            fat_g=fat_g,
+            raw_payload=product,
+        )
+
+
 class BedcaAdapter:
     """
     BEDCA adapter placeholder.
@@ -200,12 +319,18 @@ class BedcaAdapter:
 def get_food_source_adapter() -> FoodSourceAdapter:
     """Resolve the active adapter using app settings.
 
-    Raises UnsupportedFoodSourceError for non-"fdc" sources in the MVP.
+    Supports both FDC and Open Food Facts sources.
     """
     # Lazy import to avoid circulars
     from app.core.config import settings
 
-    source = (settings.FOOD_SOURCE or "fdc").lower()
-    if source != "fdc":
-        raise UnsupportedFoodSourceError(f"Unsupported FOOD_SOURCE: {settings.FOOD_SOURCE}")
-    return FdcAdapter(api_key=settings.FDC_API_KEY)
+    source = (settings.FOOD_SOURCE or "openfoodfacts").lower()
+    
+    if source == "openfoodfacts":
+        return OpenFoodFactsAdapter()
+    elif source == "fdc":
+        if not settings.FDC_API_KEY:
+            raise ValueError("FDC_API_KEY is required when FOOD_SOURCE=fdc")
+        return FdcAdapter(api_key=settings.FDC_API_KEY)
+    else:
+        raise UnsupportedFoodSourceError(f"Unsupported FOOD_SOURCE: {settings.FOOD_SOURCE}. Supported: openfoodfacts, fdc")

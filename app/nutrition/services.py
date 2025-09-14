@@ -148,6 +148,7 @@ def get_day_log(db: Session, user_id: int, day: date) -> schemas.DayLogRead:
         water_total_ml=water_total,
         targets=schemas.TargetsRead.model_validate(target),
         adherence=adherence,
+        calories_consumed_kcal=totals.calories_kcal,
     )
 
 

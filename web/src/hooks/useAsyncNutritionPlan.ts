@@ -1,0 +1,149 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { apiFetch } from '../api/client';
+import type { AsyncNutritionPlanStatus, AsyncNutritionPlanResponse } from '../types/nutrition';
+
+export function useAsyncNutritionPlan() {
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [status, setStatus] = useState<AsyncNutritionPlanStatus | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollCountRef = useRef(0);
+
+  const generatePlan = useCallback(async (preferences: any, days: number = 14) => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      setTaskId(null);
+      setStatus(null);
+
+      // Iniciar generación asíncrona
+      const response = await apiFetch<AsyncNutritionPlanResponse>(
+        '/ai/generate/nutrition-plan-14-days-async',
+        {
+          method: 'POST',
+          body: JSON.stringify({ 
+            days, 
+            preferences 
+          })
+        }
+      );
+
+      setTaskId(response.task_id);
+
+      // Polling optimizado con intervalos adaptativos
+      const pollStatus = async (): Promise<void> => {
+        try {
+          const statusResponse = await apiFetch<AsyncNutritionPlanStatus>(
+            `/ai/generate/nutrition-plan-status/${response.task_id}`
+          );
+
+          setStatus(statusResponse);
+          pollCountRef.current += 1;
+
+          if (statusResponse.status === 'SUCCESS') {
+            stopPolling();
+            setIsGenerating(false);
+            setTaskId(null);
+            return;
+          } else if (statusResponse.status === 'FAILURE') {
+            stopPolling();
+            setError(statusResponse.error || 'Error desconocido');
+            setIsGenerating(false);
+            setTaskId(null);
+            return;
+          } else {
+            // Intervalo adaptativo: más frecuente al inicio, menos frecuente después
+            const baseInterval = 3000; // 3 segundos base
+            const adaptiveInterval = Math.min(baseInterval + (pollCountRef.current * 500), 10000); // Máximo 10 segundos
+            
+            pollingIntervalRef.current = setTimeout(pollStatus, adaptiveInterval);
+          }
+        } catch (pollError) {
+          console.error('Error polling status:', pollError);
+          stopPolling();
+          setError('Error consultando el progreso');
+          setIsGenerating(false);
+          setTaskId(null);
+        }
+      };
+
+      // Función para detener el polling
+      const stopPolling = () => {
+        if (pollingIntervalRef.current) {
+          clearTimeout(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        pollCountRef.current = 0;
+      };
+
+      // Iniciar polling después de un breve delay
+      pollingIntervalRef.current = setTimeout(pollStatus, 2000);
+
+    } catch (err: any) {
+      console.error('Error iniciando generación:', err);
+      setError(err.message || 'Error iniciando la generación del plan');
+      setIsGenerating(false);
+    }
+  }, []);
+
+  const cancelGeneration = useCallback(async () => {
+    if (!taskId) return;
+
+    try {
+      // Detener polling inmediatamente
+      if (pollingIntervalRef.current) {
+        clearTimeout(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      pollCountRef.current = 0;
+
+      await apiFetch(`/ai/generate/nutrition-plan-cancel/${taskId}`, {
+        method: 'DELETE'
+      });
+      
+      setIsGenerating(false);
+      setTaskId(null);
+      setStatus(null);
+    } catch (err: any) {
+      console.error('Error cancelando generación:', err);
+    }
+  }, [taskId]);
+
+  const reset = useCallback(() => {
+    // Detener polling si está activo
+    if (pollingIntervalRef.current) {
+      clearTimeout(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    pollCountRef.current = 0;
+    
+    setTaskId(null);
+    setStatus(null);
+    setIsGenerating(false);
+    setError(null);
+  }, []);
+
+  // Cleanup al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearTimeout(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    generatePlan,
+    cancelGeneration,
+    reset,
+    taskId,
+    status,
+    isGenerating,
+    error,
+    progress: status?.progress || 0,
+    plan: status?.plan,
+    isComplete: status?.status === 'SUCCESS',
+    isFailed: status?.status === 'FAILURE'
+  };
+}

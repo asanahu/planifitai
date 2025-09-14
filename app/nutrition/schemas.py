@@ -132,6 +132,7 @@ class DayLogRead(BaseModel):
     water_total_ml: int
     targets: TargetsRead | None
     adherence: Dict[str, float] | None = None
+    calories_consumed_kcal: Decimal = Decimal(0)
 
 
 class SummaryRead(BaseModel):

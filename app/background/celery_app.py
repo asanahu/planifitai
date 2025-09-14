@@ -12,7 +12,7 @@ def make_celery() -> Celery:
         "planifitai",
         broker=broker,
         backend=backend,
-        include=["app.background.tasks"],
+        include=["app.background.tasks", "app.background.nutrition_tasks"],
     )
     if os.getenv("CELERY_TASK_ALWAYS_EAGER") == "1":
         app.conf.update(
@@ -25,8 +25,8 @@ def make_celery() -> Celery:
         task_serializer="json",
         result_serializer="json",
         accept_content=["json"],
-        task_time_limit=int(os.getenv("CELERY_TASK_TIME_LIMIT", "60")),
-        task_soft_time_limit=int(os.getenv("CELERY_TASK_SOFT_TIME_LIMIT", "50")),
+        task_time_limit=int(os.getenv("CELERY_TASK_TIME_LIMIT", "300")),  # 5 minutos
+        task_soft_time_limit=int(os.getenv("CELERY_TASK_SOFT_TIME_LIMIT", "240")),  # 4 minutos
         task_acks_late=True,
         worker_prefetch_multiplier=1,
         broker_transport_options={"visibility_timeout": 3600},

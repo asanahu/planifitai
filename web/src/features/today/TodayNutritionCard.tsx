@@ -4,12 +4,13 @@ import { today } from '../../utils/date';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import { Utensils, PlusCircle, CalendarDays, ShoppingCart } from 'lucide-react';
+import { Progress } from '@/components/ui/Progress';
 
 export function TodayNutritionCard() {
   const date = today();
   const { data, isLoading } = useQuery({ queryKey: ['nutrition', date], queryFn: () => getDayLog(date) });
   if (isLoading) return <Skeleton className="h-40" />;
-  if (!data)
+  if (!data) {
     return (
       <section className="space-y-3 rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
         <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -25,17 +26,24 @@ export function TodayNutritionCard() {
         </Link>
       </section>
     );
-  const consumed = data.totals.calories;
-  const target = data.targets.calories;
-  const percent = target ? Math.round((consumed / target) * 100) : 0;
+  }
+  const consumed = Math.round(data.calories_consumed_kcal || 0);
+  const target = data.targets?.calories_target || 0;
+  const percent = target > 0 ? Math.round((consumed / target) * 100) : 0;
+
   return (
     <section className="space-y-3 rounded border bg-white p-3 shadow-sm dark:bg-gray-800">
       <h2 className="flex items-center gap-2 text-lg font-bold">
         <Utensils className="h-5 w-5" /> Comidas de hoy
       </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        Buen ritmo, estás en el {percent}% del objetivo ({consumed}/{target} kcal)
-      </p>
+      <div className="space-y-1">
+        <div className="flex justify-between text-sm font-medium">
+          <span>{consumed} kcal</span>
+          <span className="text-gray-500">{target} kcal</span>
+        </div>
+        <Progress value={percent} />
+        <p className="text-right text-sm text-gray-600 dark:text-gray-300">{percent}% del objetivo</p>
+      </div>
       <div className="flex flex-wrap gap-2 text-sm">
         <Link
           to="/nutrition/today"

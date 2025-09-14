@@ -6,11 +6,13 @@ services:
       - .:/code
     environment:
       - DATABASE_URL=postgresql://planifitai:planifitai@db:5432/planifitai
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - API_OPEN_AI=${API_OPEN_AI}
+      - OPENAI_API_KEY=${API_OPEN_AI}
       - OPENROUTER_KEY=${OPENROUTER_KEY}
       - OPENROUTER_HTTP_REFERER=${OPENROUTER_HTTP_REFERER}
       - OPENROUTER_APP_TITLE=${OPENROUTER_APP_TITLE}
       - AI_FEATURES_ENABLED=${AI_FEATURES_ENABLED}
+      - FORCE_SIMULATE_MODE=false
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - AI_SERVICE_URL=http://ai:8080
@@ -32,11 +34,13 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DATABASE_URL=postgresql://planifitai:planifitai@db:5432/planifitai
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - API_OPEN_AI=${API_OPEN_AI}
+      - OPENAI_API_KEY=${API_OPEN_AI}
       - OPENROUTER_KEY=${OPENROUTER_KEY}
       - OPENROUTER_HTTP_REFERER=${OPENROUTER_HTTP_REFERER}
       - OPENROUTER_APP_TITLE=${OPENROUTER_APP_TITLE}
       - AI_FEATURES_ENABLED=${AI_FEATURES_ENABLED}
+      - FORCE_SIMULATE_MODE=false
       - AI_SERVICE_URL=http://ai:8080
       - AI_INTERNAL_SECRET=${AI_INTERNAL_SECRET}
     depends_on:
@@ -60,6 +64,7 @@ services:
       - internal
   redis:
     image: redis:7-alpine
+    command: redis-server --save "" --appendonly no
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:

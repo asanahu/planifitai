@@ -6,9 +6,26 @@ function format(d: Date): string {
 }
 
 function nowInMadrid(): Date {
+  // Usar Intl.DateTimeFormat para obtener la fecha correcta en Madrid
   const now = new Date();
-  const tz = now.toLocaleString('en-US', { timeZone: 'Europe/Madrid' });
-  return new Date(tz);
+  const madridFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  
+  const parts = madridFormatter.formatToParts(now);
+  const year = parts.find(part => part.type === 'year')?.value;
+  const month = parts.find(part => part.type === 'month')?.value;
+  const day = parts.find(part => part.type === 'day')?.value;
+  
+  if (year && month && day) {
+    return new Date(`${year}-${month}-${day}T00:00:00`);
+  }
+  
+  // Fallback: usar fecha local
+  return new Date();
 }
 
 export function today(): string {

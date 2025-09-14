@@ -11,18 +11,18 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from app.ai.provider import OpenAIProvider, OpenRouterProvider
+from app.ai.provider import OpenAIProvider, OpenRouterProvider, OpenRouterBackupProvider
 from app.core.config import settings
 
 
 class AiClient:
     def __init__(
-        self, base_url: str, secret: str, timeout: int = 10, max_retries: int = 2
+        self, base_url: str, secret: str, timeout: int = 120, max_retries: int = 1
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._secret = secret.encode()
         self._max_retries = max_retries
-        self._client = httpx.Client(timeout=httpx.Timeout(timeout, connect=3, read=30))
+        self._client = httpx.Client(timeout=httpx.Timeout(timeout, connect=5, read=120))
         self._failures = 0
         self._next_retry = 0.0
 
@@ -84,11 +84,20 @@ class AiClient:
 
 class LocalAiClient:
     def __init__(self) -> None:
-        # Prefer OpenRouter when configured, otherwise keep simulated provider
-        if settings.OPENROUTER_KEY:
+        # Prefer OpenAI GPT-5-nano as primary, then OpenRouter as backup
+        if getattr(settings, 'API_OPEN_AI', None) or settings.OPENAI_API_KEY:
+            self._provider = OpenAIProvider()
+            # Initialize backup provider with OpenRouter if available
+            self._backup_provider = OpenRouterProvider() if settings.OPENROUTER_KEY else None
+        elif settings.OPENROUTER_KEY2:
+            self._provider = OpenRouterBackupProvider()
+            self._backup_provider = OpenRouterProvider() if settings.OPENROUTER_KEY else None
+        elif settings.OPENROUTER_KEY:
             self._provider = OpenRouterProvider()
+            self._backup_provider = None
         else:
             self._provider = OpenAIProvider()
+            self._backup_provider = None
 
     def embeddings(
         self, user_id: int, texts: List[str], *, simulate: bool = False
@@ -103,13 +112,37 @@ class LocalAiClient:
         model: Optional[str] = None,
         simulate: bool = False,
     ) -> Dict[str, Any]:
-        # OpenRouterProvider supports optional model override
-        if hasattr(self._provider, "chat"):
-            try:
-                return self._provider.chat(user_id, messages, simulate=simulate, model=model)  # type: ignore[arg-type]
-            except TypeError:
-                pass
-        return self._provider.chat(user_id, messages, simulate=simulate)
+        # Try main provider first
+        try:
+            if hasattr(self._provider, "chat"):
+                try:
+                    return self._provider.chat(user_id, messages, simulate=simulate, model=model)  # type: ignore[arg-type]
+                except TypeError:
+                    pass
+            return self._provider.chat(user_id, messages, simulate=simulate)
+        except Exception as main_exc:
+            # Check if it's a rate limit or similar error that should trigger fallback
+            error_msg = str(main_exc).lower()
+            is_rate_limit = any(keyword in error_msg for keyword in [
+                "rate limit", "too many requests", "quota exceeded", 
+                "429", "limit exceeded", "throttled"
+            ])
+            
+            # If we have a backup provider and it's a rate limit error, try backup
+            if self._backup_provider and is_rate_limit:
+                try:
+                    if hasattr(self._backup_provider, "chat"):
+                        try:
+                            return self._backup_provider.chat(user_id, messages, simulate=simulate, model=model)  # type: ignore[arg-type]
+                        except TypeError:
+                            pass
+                    return self._backup_provider.chat(user_id, messages, simulate=simulate)
+                except Exception as backup_exc:
+                    # If backup also fails, raise the original error
+                    raise main_exc from backup_exc
+            
+            # If no backup or not a rate limit error, raise the original error
+            raise main_exc
 
 
 _client: LocalAiClient | AiClient | None = None

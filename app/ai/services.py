@@ -15,6 +15,7 @@ from app.nutrition import services as nutrition_services
 
 from . import embeddings as emb
 from . import schemas
+from . import prompt_library
 
 # ---------------------------------------------------------------------------
 # Generators
@@ -132,7 +133,9 @@ def generate_workout_plan(
         days_per_week_value = dpw
 
     from app.core.config import settings as _settings  # local import to avoid cycles
-    if simulate or not _settings.OPENROUTER_KEY:
+    # Forzar modo simulado si está habilitado el modo desarrollo
+    force_simulate = getattr(_settings, 'FORCE_SIMULATE_MODE', False)
+    if simulate or force_simulate:
         def _weekday_name(idx: int) -> str:
             names = [
                 "monday",
@@ -256,6 +259,112 @@ def generate_workout_plan(
         raise HTTPException(status_code=502, detail=f"AI plan validation failed: {exc}")
 
 
+def generate_nutrition_plan_optimized(
+    user: UserContext,
+    req: schemas.NutritionPlanRequest,
+    db: Session,
+    *,
+    simulate: bool = False,
+) -> schemas.NutritionPlan:
+    """Versión optimizada para generación rápida."""
+    from app.core.config import settings as _settings
+    # Forzar modo simulado si está habilitado el modo desarrollo
+    force_simulate = getattr(_settings, 'FORCE_SIMULATE_MODE', False)
+    if simulate or force_simulate:
+        # Crear plan simulado más realista
+        from datetime import timedelta
+        
+        days = []
+        today = date.today()
+        
+        for i in range(max(1, req.days)):
+            current_date = today + timedelta(days=i)
+            
+            # Desayuno
+            breakfast_items = [
+                schemas.MealItem(name="avena con leche", qty=50, unit="g", kcal=180, protein_g=6, carbs_g=30, fat_g=3),
+                schemas.MealItem(name="plátano", qty=1, unit="unidad", kcal=90, protein_g=1, carbs_g=23, fat_g=0.3),
+            ]
+            breakfast = schemas.Meal(type="breakfast", items=breakfast_items, meal_kcal=270)
+            
+            # Almuerzo
+            lunch_items = [
+                schemas.MealItem(name="pechuga de pollo", qty=150, unit="g", kcal=250, protein_g=46, carbs_g=0, fat_g=5),
+                schemas.MealItem(name="arroz integral", qty=80, unit="g", kcal=280, protein_g=6, carbs_g=58, fat_g=2),
+                schemas.MealItem(name="brócoli", qty=100, unit="g", kcal=35, protein_g=3, carbs_g=7, fat_g=0.4),
+            ]
+            lunch = schemas.Meal(type="lunch", items=lunch_items, meal_kcal=565)
+            
+            # Cena
+            dinner_items = [
+                schemas.MealItem(name="salmón", qty=120, unit="g", kcal=200, protein_g=24, carbs_g=0, fat_g=12),
+                schemas.MealItem(name="ensalada mixta", qty=150, unit="g", kcal=50, protein_g=2, carbs_g=8, fat_g=1),
+                schemas.MealItem(name="aceite de oliva", qty=10, unit="ml", kcal=90, protein_g=0, carbs_g=0, fat_g=10),
+            ]
+            dinner = schemas.Meal(type="dinner", items=dinner_items, meal_kcal=340)
+            
+            # Snack
+            snack_items = [
+                schemas.MealItem(name="yogur griego", qty=150, unit="g", kcal=130, protein_g=15, carbs_g=8, fat_g=4),
+                schemas.MealItem(name="nueces", qty=15, unit="g", kcal=100, protein_g=2, carbs_g=2, fat_g=10),
+            ]
+            snack = schemas.Meal(type="snack", items=snack_items, meal_kcal=230)
+            
+            # Totales del día
+            day_totals = {
+                "kcal": 1405,
+                "protein_g": 99,
+                "carbs_g": 128,
+                "fat_g": 35.7
+            }
+            
+            day_plan = schemas.NutritionDayPlan(
+                date=current_date.isoformat(),
+                meals=[breakfast, lunch, dinner, snack],
+                totals=day_totals
+            )
+            days.append(day_plan)
+        
+        return schemas.NutritionPlan(
+            days=days,
+            targets={"kcal": 2000, "protein_g": 150, "carbs_g": 250, "fat_g": 70},
+        )
+
+    client = get_ai_client()
+    today = date.today()
+    dates = [(today + timedelta(days=i)).isoformat() for i in range(max(1, req.days))]
+    
+    # Prompt ultra-conciso para máxima velocidad
+    sys_prompt = "Eres PlanifitAI. Genera plan nutricional en JSON: {days: [{date: str, meals: [{type: str, items: [{name: str, qty: float, unit: str, kcal: float, protein_g: float, carbs_g: float, fat_g: float}]}], totals: {kcal: float, protein_g: float, carbs_g: float, fat_g: float}}], targets: {kcal: float, protein_g: float, carbs_g: float, fat_g: float}}"
+    
+    # Perfil mínimo
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+    profile_ctx = ""
+    if profile:
+        if profile.sex:
+            profile_ctx += f"sexo={_es_sex(profile.sex)} "
+        if isinstance(profile.age, int):
+            profile_ctx += f"edad={profile.age} "
+        if profile.goal:
+            profile_ctx += f"objetivo={_es_goal(profile.goal)} "
+
+    user_prompt = f"Plan {len(dates)} días para {dates}. {profile_ctx}Solo JSON."
+    
+    resp = client.chat(
+        user.id,
+        [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    data = _parse_json_payload(resp.get("reply", ""))
+    data = _normalize_plan_data_shape(data)
+    try:
+        return schemas.NutritionPlan.model_validate(data)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"AI nutrition validation failed: {exc}")
+
+
 def generate_nutrition_plan(
     user: UserContext,
     req: schemas.NutritionPlanRequest,
@@ -264,34 +373,72 @@ def generate_nutrition_plan(
     simulate: bool = False,
 ) -> schemas.NutritionPlan:
     from app.core.config import settings as _settings  # local import to avoid cycles
-    if simulate or not _settings.OPENROUTER_KEY:
-        item = schemas.MealItem(
-            name="manzana",
-            qty=1,
-            unit="unit",
-            kcal=95,
-            protein_g=0.3,
-            carbs_g=25,
-            fat_g=0.2,
-        )
-        meal = schemas.Meal(type="breakfast", items=[item], meal_kcal=95)
-        day = schemas.NutritionDayPlan(
-            date="2024-01-01",
-            meals=[meal],
-            totals={"kcal": 95, "protein_g": 0.3, "carbs_g": 25, "fat_g": 0.2},
-        )
+    # Forzar modo simulado si está habilitado el modo desarrollo
+    force_simulate = getattr(_settings, 'FORCE_SIMULATE_MODE', False)
+    if simulate or force_simulate:
+        # Crear plan simulado más realista
+        from datetime import timedelta
+        
+        days = []
+        today = date.today()
+        
+        for i in range(max(1, req.days)):
+            current_date = today + timedelta(days=i)
+            
+            # Desayuno
+            breakfast_items = [
+                schemas.MealItem(name="avena con leche", qty=50, unit="g", kcal=180, protein_g=6, carbs_g=30, fat_g=3),
+                schemas.MealItem(name="plátano", qty=1, unit="unidad", kcal=90, protein_g=1, carbs_g=23, fat_g=0.3),
+            ]
+            breakfast = schemas.Meal(type="breakfast", items=breakfast_items, meal_kcal=270)
+            
+            # Almuerzo
+            lunch_items = [
+                schemas.MealItem(name="pechuga de pollo", qty=150, unit="g", kcal=250, protein_g=46, carbs_g=0, fat_g=5),
+                schemas.MealItem(name="arroz integral", qty=80, unit="g", kcal=280, protein_g=6, carbs_g=58, fat_g=2),
+                schemas.MealItem(name="brócoli", qty=100, unit="g", kcal=35, protein_g=3, carbs_g=7, fat_g=0.4),
+            ]
+            lunch = schemas.Meal(type="lunch", items=lunch_items, meal_kcal=565)
+            
+            # Cena
+            dinner_items = [
+                schemas.MealItem(name="salmón", qty=120, unit="g", kcal=200, protein_g=24, carbs_g=0, fat_g=12),
+                schemas.MealItem(name="ensalada mixta", qty=150, unit="g", kcal=50, protein_g=2, carbs_g=8, fat_g=1),
+                schemas.MealItem(name="aceite de oliva", qty=10, unit="ml", kcal=90, protein_g=0, carbs_g=0, fat_g=10),
+            ]
+            dinner = schemas.Meal(type="dinner", items=dinner_items, meal_kcal=340)
+            
+            # Snack
+            snack_items = [
+                schemas.MealItem(name="yogur griego", qty=150, unit="g", kcal=130, protein_g=15, carbs_g=8, fat_g=4),
+                schemas.MealItem(name="nueces", qty=15, unit="g", kcal=100, protein_g=2, carbs_g=2, fat_g=10),
+            ]
+            snack = schemas.Meal(type="snack", items=snack_items, meal_kcal=230)
+            
+            # Totales del día
+            day_totals = {
+                "kcal": 1405,
+                "protein_g": 99,
+                "carbs_g": 128,
+                "fat_g": 35.7
+            }
+            
+            day_plan = schemas.NutritionDayPlan(
+                date=current_date.isoformat(),
+                meals=[breakfast, lunch, dinner, snack],
+                totals=day_totals
+            )
+            days.append(day_plan)
+        
         return schemas.NutritionPlan(
-            days=[day],
+            days=days,
             targets={"kcal": 2000, "protein_g": 150, "carbs_g": 250, "fat_g": 70},
         )
 
     client = get_ai_client()
     today = date.today()
     dates = [(today + timedelta(days=i)).isoformat() for i in range(max(1, req.days))]
-    sys_prompt = (
-        "Eres PlanifitAI, un nutricionista virtual. Devuelve únicamente JSON válido, sin explicaciones. "
-        "Esquema: {days: [{date: str, meals: [{type: 'breakfast'|'lunch'|'dinner'|'snack', items: [{name:str, qty:number, unit:str, kcal:number, protein_g:number, carbs_g:number, fat_g:number}], meal_kcal:number}], totals:{kcal:number, protein_g:number, carbs_g:number, fat_g:number}}], targets:{kcal:number, protein_g:number, carbs_g:number, fat_g:number}}."
-    )
+    sys_prompt = prompt_library.NUTRITION_PLAN_SYSTEM_PROMPT
     # Enriquecer con datos del perfil y objetivos sugeridos
     profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
     profile_ctx_parts: list[str] = []
@@ -341,11 +488,11 @@ def generate_nutrition_plan(
     )
 
     user_prompt = (
-        f"Genera un plan de nutrición de {len(dates)} días en español para las fechas {dates}. "
-        f"Preferencias/restricciones: {req.preferences or {}}."
+        f"Plan nutricional {len(dates)} días para {dates}. "
+        f"Preferencias: {req.preferences or {}}."
         + profile_ctx
         + targets_ctx
-        + " Usa unidades simples (g, ml, unidad). No devuelvas texto fuera del JSON."
+        + " Solo JSON."
     )
     resp = client.chat(
         user.id,
@@ -355,10 +502,66 @@ def generate_nutrition_plan(
         ],
     )
     data = _parse_json_payload(resp.get("reply", ""))
+    data = _normalize_plan_data_shape(data)
     try:
         return schemas.NutritionPlan.model_validate(data)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"AI nutrition validation failed: {exc}")
+
+
+def _normalize_plan_data_shape(raw: dict) -> dict:
+    """Normaliza y completa campos faltantes del plan para cumplir el esquema.
+    - Agrega meal_kcal si falta
+    - Agrega totals por día si falta
+    - Asegura números en items
+    - Asegura targets si faltan
+    """
+    data = raw if isinstance(raw, dict) else {}
+    days = data.get("days")
+    if isinstance(days, list):
+        for day in days:
+            meals = day.get("meals") or []
+            sum_kcal = 0.0
+            sum_p = 0.0
+            sum_c = 0.0
+            sum_f = 0.0
+            for meal in meals:
+                items = meal.get("items") or []
+                mkcal = 0.0
+                for it in items:
+                    try:
+                        it["kcal"] = float(it.get("kcal", 0) or 0)
+                        it["protein_g"] = float(it.get("protein_g", 0) or 0)
+                        it["carbs_g"] = float(it.get("carbs_g", 0) or 0)
+                        it["fat_g"] = float(it.get("fat_g", 0) or 0)
+                    except Exception:
+                        it["kcal"] = 0.0
+                        it["protein_g"] = it.get("protein_g", 0) or 0
+                        it["carbs_g"] = it.get("carbs_g", 0) or 0
+                        it["fat_g"] = it.get("fat_g", 0) or 0
+                    mkcal += it["kcal"]
+                    sum_p += float(it.get("protein_g", 0) or 0)
+                    sum_c += float(it.get("carbs_g", 0) or 0)
+                    sum_f += float(it.get("fat_g", 0) or 0)
+                if "meal_kcal" not in meal or meal.get("meal_kcal") is None:
+                    meal["meal_kcal"] = round(mkcal, 2)
+                sum_kcal += mkcal
+            if "totals" not in day or not isinstance(day.get("totals"), dict):
+                day["totals"] = {
+                    "kcal": round(sum_kcal, 2),
+                    "protein_g": round(sum_p, 2),
+                    "carbs_g": round(sum_c, 2),
+                    "fat_g": round(sum_f, 2),
+                }
+    if "targets" not in data or not isinstance(data.get("targets"), dict):
+        first_totals = (days[0].get("totals") if isinstance(days, list) and days else {}) or {}
+        data["targets"] = {
+            "kcal": int(first_totals.get("kcal", 2000) or 2000),
+            "protein_g": float(first_totals.get("protein_g", 120) or 120),
+            "carbs_g": float(first_totals.get("carbs_g", 250) or 250),
+            "fat_g": float(first_totals.get("fat_g", 70) or 70),
+        }
+    return data
 
 
 # ---------------------------------------------------------------------------

@@ -18,18 +18,20 @@ class Settings(BaseSettings):
 
     # Feature flags
     AI_FEATURES_ENABLED: bool = Field(default=False)
+    FORCE_SIMULATE_MODE: bool = Field(default=False)  # Usar IA real
 
     # Nutrition data sources
-    FOOD_SOURCE: str = Field(default="fdc")
+    FOOD_SOURCE: str = Field(default="openfoodfacts")
     FDC_API_KEY: str | None = None
 
     # Opcionales (si los usas después)
+    API_OPEN_AI: str | None = None
     OPENAI_API_KEY: str | None = None
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
     OPENAI_EMBEDDING_MODEL: str | None = None
     OPENAI_MAX_TOKENS: int = 1500
     OPENAI_TEMPERATURE: float = 0.4
-    OPENAI_TIMEOUT_S: int = 30
+    OPENAI_TIMEOUT_S: int = 120
     OPENAI_RETRIES: int = 2
     AI_RESPONSE_JSON_STRICT: bool = True
     AI_DAILY_BUDGET_CENTS: int = 100
@@ -43,6 +45,10 @@ class Settings(BaseSettings):
     # Optional headers for OpenRouter rankings (no funcional, solo ranking)
     OPENROUTER_HTTP_REFERER: str | None = None
     OPENROUTER_APP_TITLE: str | None = None
+    
+    # OpenRouter Backup (GLM-4.5 Air free)
+    OPENROUTER_KEY2: str | None = None
+    OPENROUTER_BACKUP_CHAT_MODEL: str = "z-ai/glm-4.5-air:free"
 
     # Wger API
     WGER_API_TOKEN: str | None = None
