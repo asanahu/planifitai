@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getMealPlan, getMealActuals, setMealActuals } from '../utils/storage';
+import { getMealPlanForWeek, getMealActualsForWeek, setMealActualsForWeek } from '../utils/storage';
 import { today } from '../utils/date';
 import { createMeal, addMealItemFlexible, getDayLog } from '../api/nutrition';
 import { calculateFoodCalories } from '../utils/caloriesCalculator';
@@ -12,6 +12,37 @@ import { calculateFoodCalories } from '../utils/caloriesCalculator';
 export function useAutoSyncMeals() {
   const queryClient = useQueryClient();
   const currentDate = today();
+
+  // Utilidades locales para semanas (actual y siguiente)
+  const formatYMDLocal = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const getWeekDatesLocal = (weekKey: 'week1' | 'week2'): string[] => {
+    const now = new Date();
+    const dow = now.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    monday.setDate(monday.getDate() + mondayOffset + (weekKey === 'week2' ? 7 : 0));
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate());
+      d.setDate(monday.getDate() + i);
+      dates.push(formatYMDLocal(d));
+    }
+    return dates;
+  };
+
+  const getWeekKeyForDate = (date: string): 'week1' | 'week2' => {
+    const w1 = getWeekDatesLocal('week1');
+    if (w1.includes(date)) return 'week1';
+    const w2 = getWeekDatesLocal('week2');
+    if (w2.includes(date)) return 'week2';
+    return 'week1';
+  };
 
   // Función para sincronizar un día específico
   const syncDayToBackend = async (day: string, mealType: string, items: string[]) => {
@@ -75,11 +106,10 @@ export function useAutoSyncMeals() {
 
   // Función para sincronizar todo el día actual
   const syncCurrentDay = async (targetDate?: string) => {
-    const plan = getMealPlan();
-    const actuals = getMealActuals();
-    
-    // Usar la fecha objetivo o la fecha actual
     const dateToSync = targetDate || currentDate;
+    const weekKey = getWeekKeyForDate(dateToSync);
+    const plan = getMealPlanForWeek(weekKey);
+    const actuals = getMealActualsForWeek(weekKey);
     
     // Obtener el día en formato del plan (Mon, Tue, etc.)
     const dayKey = getDayKeyFromDate(dateToSync);
@@ -91,14 +121,14 @@ export function useAutoSyncMeals() {
       // Sincronizar cada comida del plan
       for (const [mealType, items] of Object.entries(dayPlan)) {
         if (items.length > 0) {
-          await syncDayToBackend(dateToSync, mealType, items);
+          await syncDayToBackend(dateToSync, mealType, items as string[]);
         }
       }
       
       // Actualizar los actuals para reflejar que se sincronizó
-      const nextActuals = { ...actuals };
+      const nextActuals = { ...actuals } as any;
       nextActuals[dayKey] = { ...dayPlan };
-      setMealActuals(nextActuals);
+      setMealActualsForWeek(weekKey, nextActuals);
       
       // Invalidar la query de comidas del día para refrescar la UI
       queryClient.invalidateQueries({ queryKey: ['nutrition-day', dateToSync] });
@@ -108,9 +138,10 @@ export function useAutoSyncMeals() {
   // Función para sincronizar cuando se agrega un alimento individual
   const syncIndividualFood = async (mealType: string, foodName: string, targetDate?: string) => {
     const dateToSync = targetDate || currentDate;
+    const weekKey = getWeekKeyForDate(dateToSync);
     const dayKey = getDayKeyFromDate(dateToSync);
-    const actuals = getMealActuals();
-    
+    const actuals = getMealActualsForWeek(weekKey);
+
     // Mapear tipos del backend a tipos del plan
     const planMealTypeMap: Record<string, string> = {
       'breakfast': 'Breakfast',
@@ -123,7 +154,7 @@ export function useAutoSyncMeals() {
     const planMealType = planMealTypeMap[mealType] || 'Other';
     
     // Agregar el alimento a los actuals
-    const nextActuals = { ...actuals };
+    const nextActuals = { ...actuals } as any;
     if (!nextActuals[dayKey]) {
       nextActuals[dayKey] = {};
     }
@@ -134,7 +165,7 @@ export function useAutoSyncMeals() {
     // Evitar duplicados
     if (!nextActuals[dayKey][planMealType].includes(foodName)) {
       nextActuals[dayKey][planMealType].push(foodName);
-      setMealActuals(nextActuals);
+      setMealActualsForWeek(weekKey, nextActuals);
     }
     
     // Sincronizar con el backend
@@ -167,12 +198,13 @@ export function useAutoSyncMeals() {
         }
       }
       
-      // Actualizar localStorage
-      const actuals = getMealActuals();
-      const currentDayKey = getCurrentDayKey();
-      const nextActuals = { ...actuals };
-      nextActuals[currentDayKey] = backendMeals;
-      setMealActuals(nextActuals);
+      // Actualizar localStorage semanal
+      const weekKey = getWeekKeyForDate(day);
+      const dayKey = getDayKeyFromDate(day);
+      const actuals = getMealActualsForWeek(weekKey);
+      const nextActuals = { ...actuals } as any;
+      nextActuals[dayKey] = backendMeals;
+      setMealActualsForWeek(weekKey, nextActuals);
       
       console.log('✅ Backend sincronizado con localStorage');
     } catch (error) {
@@ -225,3 +257,6 @@ function getPlanMealType(backendMealType: string): string {
   };
   return map[backendMealType] || 'Other';
 }
+
+
+

@@ -8,7 +8,6 @@ export function useAsyncNutritionPlan() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
   const pollCountRef = useRef(0);
 
   const generatePlan = useCallback(async (preferences: any, days: number = 14) => {
@@ -31,23 +30,6 @@ export function useAsyncNutritionPlan() {
       );
 
       setTaskId(response.task_id);
-
-      // Si el backend devuelve SUCCESS directo con plan, no usar SSE/polling
-      if (response.status === 'SUCCESS' && response.plan) {
-        const successStatus: AsyncNutritionPlanStatus = {
-          status: 'SUCCESS',
-          progress: 100,
-          message: response.message,
-          plan: response.plan,
-          days_generated: response.days_generated,
-          targets: response.targets,
-          generated_at: new Date().toISOString(),
-        };
-        setStatus(successStatus);
-        setIsGenerating(false);
-        setTaskId(null);
-        return response;
-      }
 
       // Polling optimizado con intervalos adaptativos
       const pollStatus = async (): Promise<void> => {
@@ -95,49 +77,8 @@ export function useAsyncNutritionPlan() {
         pollCountRef.current = 0;
       };
 
-      // Helper: iniciar polling
-      const startPolling = () => {
-        pollingIntervalRef.current = setTimeout(pollStatus, 2000);
-      };
-
-      // Intentar SSE primero; si no aplica, usar polling
-      const tid = response.task_id;
-      const isDirect = /^(smart-|direct-|test-web-|error-)/.test(tid);
-      if (isDirect) {
-        startPolling();
-      } else {
-        try {
-          const API_URL = import.meta.env.VITE_DEMO === '1' ? '' : (import.meta.env.VITE_API_BASE_URL || '');
-          const url = `${API_URL}/ai/generate/nutrition-plan-stream/${tid}`;
-          const es = new EventSource(url);
-          eventSourceRef.current = es;
-          es.onmessage = (ev) => {
-            try {
-              const data = JSON.parse(ev.data) as AsyncNutritionPlanStatus;
-              if (typeof data.progress !== 'number') {
-                data.progress = data.status === 'SUCCESS' ? 100 : data.status === 'PENDING' ? 0 : (data.progress || 0);
-              }
-              setStatus(data);
-              if (data.status === 'SUCCESS' || data.status === 'FAILURE') {
-                setIsGenerating(false);
-                setTaskId(null);
-                es.close();
-                eventSourceRef.current = null;
-              }
-            } catch (e) {
-              console.error('Error parseando evento SSE', e);
-            }
-          };
-          es.onerror = () => {
-            try { es.close(); } catch {}
-            eventSourceRef.current = null;
-            startPolling();
-          };
-        } catch (e) {
-          console.error('SSE no disponible, fallback a polling', e);
-          startPolling();
-        }
-      }
+      // Iniciar polling después de un breve delay
+      pollingIntervalRef.current = setTimeout(pollStatus, 2000);
 
     } catch (err: any) {
       console.error('Error iniciando generación:', err);
@@ -156,11 +97,6 @@ export function useAsyncNutritionPlan() {
         pollingIntervalRef.current = null;
       }
       pollCountRef.current = 0;
-      // Cerrar SSE si estuviera abierto
-      if (eventSourceRef.current) {
-        try { eventSourceRef.current.close(); } catch {}
-        eventSourceRef.current = null;
-      }
 
       await apiFetch(`/ai/generate/nutrition-plan-cancel/${taskId}`, {
         method: 'DELETE'
@@ -181,10 +117,6 @@ export function useAsyncNutritionPlan() {
       pollingIntervalRef.current = null;
     }
     pollCountRef.current = 0;
-    if (eventSourceRef.current) {
-      try { eventSourceRef.current.close(); } catch {}
-      eventSourceRef.current = null;
-    }
     
     setTaskId(null);
     setStatus(null);
@@ -197,10 +129,6 @@ export function useAsyncNutritionPlan() {
     return () => {
       if (pollingIntervalRef.current) {
         clearTimeout(pollingIntervalRef.current);
-      }
-      if (eventSourceRef.current) {
-        try { eventSourceRef.current.close(); } catch {}
-        eventSourceRef.current = null;
       }
     };
   }, []);
@@ -219,3 +147,4 @@ export function useAsyncNutritionPlan() {
     isFailed: status?.status === 'FAILURE'
   };
 }
+

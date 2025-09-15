@@ -18,9 +18,10 @@ function toUiDayKey(d: any, index: number): string {
   // Prefer ISO date -> map to weekday abbr expected by UI
   const dateStr: string | undefined = d?.date || d?.Day || d?.DAY;
   if (dateStr) {
-    const dt = new Date(dateStr);
+    // Anclar al mediodía UTC para evitar desfases por zona horaria
+    const dt = new Date(`${dateStr}T12:00:00Z`);
     if (!isNaN(dt.getTime())) {
-      return DATE_DAY_ABBR[dt.getDay()];
+      return DATE_DAY_ABBR[dt.getUTCDay()];
     }
   }
   // Fallback: parse textual day
@@ -84,4 +85,3 @@ export function mapAiNutritionPlanToLocal(ai: AiNutritionPlanJSON): LocalMealPla
 export function mapAiNutritionPlanToServer(ai: AiNutritionPlanJSON) {
   return ai as unknown;
 }
-

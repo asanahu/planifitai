@@ -63,11 +63,11 @@ class OpenAIProvider:
             raise HTTPException(status_code=429, detail="Rate limit alcanzado. Intenta más tarde.")
         
         try:
+            # Usar el modelo configurado en settings para compatibilidad
+            model_name = getattr(settings, "OPENAI_CHAT_MODEL", None) or "gpt-4o-mini"
             completion = self._client.chat.completions.create(
-                model="gpt-5-nano",  # Usar GPT-5-nano
+                model=model_name,
                 messages=messages,
-                reasoning_effort="low",  # Parámetro específico de GPT-5-nano
-                verbosity="low"        # Parámetro específico de GPT-5-nano
             )
             
             # Registrar el request exitoso

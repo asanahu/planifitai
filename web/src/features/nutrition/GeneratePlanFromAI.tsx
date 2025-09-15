@@ -75,6 +75,10 @@ export default function GeneratePlanFromAI() {
       // Guardar planes
       setMealPlanForWeek('week1', week1Plan);
       setMealPlanForWeek('week2', week2Plan);
+      // Notificar a la UI para refrescar lectura desde localStorage
+      try { window.dispatchEvent(new Event('mealplan:updated')); } catch {}
+      // Notificar al planner que hay nuevos datos en localStorage
+      window.dispatchEvent(new Event('mealplan:updated'));
       
       console.log('Week1 plan:', week1Plan); // Debug
       console.log('Week2 plan:', week2Plan); // Debug
@@ -117,7 +121,10 @@ export default function GeneratePlanFromAI() {
         });
         setMealPlanForWeek('week1', week1Plan);
         setMealPlanForWeek('week2', week2Plan);
+        try { window.dispatchEvent(new Event('mealplan:updated')); } catch {}
         pushToast('Plan IA volcado a planificado (semana 1 y 2)');
+        // Notificar al planner que hay nuevos datos en localStorage
+        window.dispatchEvent(new Event('mealplan:updated'));
       }
       if (background) {
         pushToast('Generación enviada a segundo plano. Te avisaremos al terminar.');
@@ -245,4 +252,3 @@ export default function GeneratePlanFromAI() {
     </div>
   );
 }
-
