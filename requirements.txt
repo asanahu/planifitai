@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-pydantic>=2.11
+pydantic>=2.13.3
 pydantic-settings>=2.1
 SQLAlchemy
 psycopg2-binary
